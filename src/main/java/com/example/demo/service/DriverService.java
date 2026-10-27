@@ -13,8 +13,8 @@ public class DriverService extends TypedEmployeeService {
 
     private final EmployeeRepository repository;
 
-    public DriverService(EmployeeRepository repository) {
-        super(repository, DRIVER_TYPE);
+    public DriverService(EmployeeRepository repository, EmployeeAccountProvisioner accountProvisioner) {
+        super(repository, DRIVER_TYPE, accountProvisioner);
         this.repository = repository;
     }
 

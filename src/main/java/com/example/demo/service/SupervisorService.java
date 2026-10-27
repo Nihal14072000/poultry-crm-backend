@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 public class SupervisorService extends TypedEmployeeService {
     private static final String SUPERVISOR_TYPE = "SUPERVISOR";
 
-    public SupervisorService(EmployeeRepository repository) {
-        super(repository, SUPERVISOR_TYPE);
+    public SupervisorService(EmployeeRepository repository, EmployeeAccountProvisioner accountProvisioner) {
+        super(repository, SUPERVISOR_TYPE, accountProvisioner);
     }
 }
