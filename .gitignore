@@ -1,0 +1,31 @@
+# Build output
+/target/
+
+# IDE and editor files
+/.idea/
+/.vscode/
+*.iml
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+application-local.yaml
+application-local.yml
+application-secret.yaml
+application-secret.yml
+credentials*
+secrets*
+*.pem
+*.key
+*.p12
+*.jks
+
+# Logs and temporary files
+*.log
+/logs/
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db

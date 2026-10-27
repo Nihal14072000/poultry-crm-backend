@@ -1,0 +1,253 @@
+-- DROP SCHEMA demo;
+
+CREATE SCHEMA demo AUTHORIZATION postgres;
+
+-- DROP SEQUENCE demo.buying_party_id_seq;
+
+CREATE SEQUENCE demo.buying_party_id_seq
+    INCREMENT BY 1
+    MINVALUE 1
+    MAXVALUE 2147483647
+    START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE demo.driver_id_seq;
+
+CREATE SEQUENCE demo.driver_id_seq
+    INCREMENT BY 1
+    MINVALUE 1
+    MAXVALUE 2147483647
+    START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE demo.order_id_seq;
+
+CREATE SEQUENCE demo.order_id_seq
+    INCREMENT BY 1
+    MINVALUE 1
+    MAXVALUE 2147483647
+    START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE demo.order_type_id_seq;
+
+CREATE SEQUENCE demo.order_type_id_seq
+    INCREMENT BY 1
+    MINVALUE 1
+    MAXVALUE 2147483647
+    START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE demo.party_order_relation_relation_id_seq;
+
+CREATE SEQUENCE demo.party_order_relation_relation_id_seq
+    INCREMENT BY 1
+    MINVALUE 1
+    MAXVALUE 2147483647
+    START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE demo.selling_party_id_seq;
+
+CREATE SEQUENCE demo.selling_party_id_seq
+    INCREMENT BY 1
+    MINVALUE 1
+    MAXVALUE 2147483647
+    START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE demo.supervisor_id_seq;
+
+CREATE SEQUENCE demo.supervisor_id_seq
+    INCREMENT BY 1
+    MINVALUE 1
+    MAXVALUE 2147483647
+    START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE demo.trip_party_relation_relation_id_seq;
+
+CREATE SEQUENCE demo.trip_party_relation_relation_id_seq
+    INCREMENT BY 1
+    MINVALUE 1
+    MAXVALUE 2147483647
+    START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE demo.trip_trip_id_seq;
+
+CREATE SEQUENCE demo.trip_trip_id_seq
+    INCREMENT BY 1
+    MINVALUE 1
+    MAXVALUE 2147483647
+    START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE demo.vehicle_id_seq;
+
+CREATE SEQUENCE demo.vehicle_id_seq
+    INCREMENT BY 1
+    MINVALUE 1
+    MAXVALUE 2147483647
+    START 1
+	CACHE 1
+	NO CYCLE;-- demo.delievery definition
+
+-- Drop table
+
+-- DROP TABLE demo.delievery;
+
+CREATE TABLE demo.delievery ( id int4 NOT NULL, trip_id int4 NULL, supplier_pickup_id int4 NULL, vendor_delievery_id int4 NULL, mortality_id int4 NULL, payment_id int4 NULL, expense_id int4 NULL, status int4 NULL, isactive bool DEFAULT true NULL, isdeleted bool DEFAULT false NULL, createdate timestamp DEFAULT CURRENT_TIMESTAMP NULL, updateddate timestamp NULL, created_by int4 NULL, updated_by int4 NULL, CONSTRAINT delievery_pkey PRIMARY KEY (id));
+
+
+-- demo.delievery_party_relation definition
+
+-- Drop table
+
+-- DROP TABLE demo.delievery_party_relation;
+
+CREATE TABLE demo.delievery_party_relation ( id int4 NOT NULL, delivery_id int4 NULL, party_id int4 NULL, party_type varchar(50) NULL, isactive bool DEFAULT true NULL, isdeleted bool DEFAULT false NULL, create_date timestamp DEFAULT CURRENT_TIMESTAMP NULL, updated_date timestamp NULL, created_by int4 NULL, updated_by int4 NULL, CONSTRAINT delievery_party_relation_pkey PRIMARY KEY (id));
+
+
+-- demo.driver definition
+
+-- Drop table
+
+-- DROP TABLE demo.driver;
+
+CREATE TABLE demo.driver ( id serial4 NOT NULL, "name" varchar(100) NULL, address text NULL, license varchar(100) NULL, isactive bool DEFAULT true NULL, isdeleted bool DEFAULT false NULL, createdate timestamp DEFAULT CURRENT_TIMESTAMP NULL, updateddate timestamp DEFAULT CURRENT_TIMESTAMP NULL, created_by int4 NULL, updated_by int4 NULL, CONSTRAINT driver_pkey PRIMARY KEY (id));
+
+
+-- demo.employee definition
+
+-- Drop table
+
+-- DROP TABLE demo.employee;
+
+CREATE TABLE demo.employee ( id int4 NOT NULL, "name" varchar(250) NULL, address varchar(250) NULL, "number" varchar(250) NULL, "type" varchar(250) NULL, status varchar(250) NULL, isactive bool DEFAULT true NULL, isdeleted bool DEFAULT false NULL, createdate timestamp DEFAULT CURRENT_TIMESTAMP NULL, updateddate timestamp NULL, created_by int4 NULL, updated_by int4 NULL, CONSTRAINT employee_pkey null);
+
+
+-- demo.expenses definition
+
+-- Drop table
+
+-- DROP TABLE demo.expenses;
+
+CREATE TABLE demo.expenses ( id int4 NOT NULL, selling_party_id int4 NULL, actual_order_id int4 NULL, note varchar(500) NULL, isactive bool DEFAULT true NULL, isdeleted bool DEFAULT false NULL, create_date timestamp DEFAULT CURRENT_TIMESTAMP NULL, updated_date timestamp NULL, created_by int4 NULL, updated_by int4 NULL, CONSTRAINT expenses_pkey PRIMARY KEY (id));
+
+
+-- demo.mortality definition
+
+-- Drop table
+
+-- DROP TABLE demo.mortality;
+
+CREATE TABLE demo.mortality ( id int4 NOT NULL, trip_id int4 NULL, combined_mortality int4 NULL, reason varchar(255) NULL, isactive bool DEFAULT true NULL, isdeleted bool DEFAULT false NULL, create_date timestamp DEFAULT CURRENT_TIMESTAMP NULL, updated_date timestamp NULL, created_by int4 NULL, updated_by int4 NULL, CONSTRAINT mortality_pkey PRIMARY KEY (id));
+
+
+-- demo.order_type definition
+
+-- Drop table
+
+-- DROP TABLE demo.order_type;
+
+CREATE TABLE demo.order_type ( id serial4 NOT NULL, "name" varchar(100) NULL, isactive bool DEFAULT true NULL, isdeleted bool DEFAULT false NULL, createdate timestamp DEFAULT CURRENT_TIMESTAMP NULL, updateddate timestamp DEFAULT CURRENT_TIMESTAMP NULL, CONSTRAINT order_type_pkey PRIMARY KEY (id));
+
+
+-- demo.party_order_relation definition
+
+-- Drop table
+
+-- DROP TABLE demo.party_order_relation;
+
+CREATE TABLE demo.party_order_relation ( relation_id serial4 NOT NULL, party_id int4 NOT NULL, order_id int4 NOT NULL, is_active bool NULL, is_deleted bool NULL, createdate timestamp DEFAULT CURRENT_TIMESTAMP NULL, updateddate timestamp DEFAULT CURRENT_TIMESTAMP NULL, created_by int4 NULL, updated_by int4 NULL, party_type varchar(250) NULL);
+
+
+-- demo.payment definition
+
+-- Drop table
+
+-- DROP TABLE demo.payment;
+
+CREATE TABLE demo.payment ( id int4 NOT NULL, buying_party_id int4 NULL, actual_order_id int4 NULL, note varchar(500) NULL, isactive bool DEFAULT true NULL, isdeleted bool DEFAULT false NULL, create_date timestamp DEFAULT CURRENT_TIMESTAMP NULL, updated_date timestamp NULL, created_by int4 NULL, updated_by int4 NULL, CONSTRAINT payment_pkey PRIMARY KEY (id));
+
+
+-- demo.supervisor definition
+
+-- Drop table
+
+-- DROP TABLE demo.supervisor;
+
+CREATE TABLE demo.supervisor ( id serial4 NOT NULL, "name" varchar(100) NULL, address text NULL, isactive bool DEFAULT true NULL, isdeleted bool DEFAULT false NULL, createdate timestamp DEFAULT CURRENT_TIMESTAMP NULL, updateddate timestamp DEFAULT CURRENT_TIMESTAMP NULL, created_by int4 NULL, updated_by int4 NULL, CONSTRAINT supervisor_pkey PRIMARY KEY (id));
+
+
+-- demo.supplier_pickup definition
+
+-- Drop table
+
+-- DROP TABLE demo.supplier_pickup;
+
+CREATE TABLE demo.supplier_pickup ( id serial4 NOT NULL, buying_party_id int4 NULL, actual_order_id int4 NULL, note varchar(500) NULL, isactive bool DEFAULT true NULL, isdeleted bool DEFAULT false NULL, created_ate timestamp DEFAULT CURRENT_TIMESTAMP NULL, updated_date timestamp NULL, created_by int4 NULL, updated_by int4 NULL, CONSTRAINT supplier_pickup_pkey PRIMARY KEY (id));
+
+
+-- demo.trip_party_relation definition
+
+-- Drop table
+
+-- DROP TABLE demo.trip_party_relation;
+
+CREATE TABLE demo.trip_party_relation ( relation_id serial4 NOT NULL, trip_id int4 NOT NULL, party_id int4 NOT NULL, party_type varchar(15) NOT NULL, is_active bool NULL, is_deleted bool NULL, createdate timestamp DEFAULT CURRENT_TIMESTAMP NULL, updateddate timestamp DEFAULT CURRENT_TIMESTAMP NULL, created_by int4 NULL, updated_by int4 NULL);
+
+
+-- demo.vehicle definition
+
+-- Drop table
+
+-- DROP TABLE demo.vehicle;
+
+CREATE TABLE demo.vehicle ( id serial4 NOT NULL, "name" varchar(100) NULL, veh_number varchar(50) NULL, registration_no varchar(100) NULL, reg_validity date NULL, insurance_no varchar(100) NULL, insurance_validity date NULL, isactive bool DEFAULT true NULL, isdeleted bool DEFAULT false NULL, createdate timestamp DEFAULT CURRENT_TIMESTAMP NULL, updateddate timestamp DEFAULT CURRENT_TIMESTAMP NULL, created_by int4 NULL, updated_by int4 NULL, CONSTRAINT vehicle_pkey PRIMARY KEY (id));
+
+
+-- demo.vendor_delievery definition
+
+-- Drop table
+
+-- DROP TABLE demo.vendor_delievery;
+
+CREATE TABLE demo.vendor_delievery ( id serial4 NOT NULL, selling_party_id int4 NULL, actual_order_id int4 NULL, note varchar(500) NULL, isactive bool DEFAULT true NULL, isdeleted bool DEFAULT false NULL, create_date timestamp DEFAULT CURRENT_TIMESTAMP NULL, updated_date timestamp NULL, created_by int4 NULL, updated_by int4 NULL, CONSTRAINT vendor_delievery_pkey PRIMARY KEY (id));
+
+
+-- demo."order" definition
+
+-- Drop table
+
+-- DROP TABLE demo."order";
+
+CREATE TABLE demo."order" ( id serial4 NOT NULL, order_type_id int4 NULL, qty int4 NULL, weight numeric(10, 2) NULL, rate numeric(10, 2) NULL, total numeric(12, 2) NULL, isactive bool DEFAULT true NULL, isdeleted bool DEFAULT false NULL, createdate timestamp DEFAULT CURRENT_TIMESTAMP NULL, updateddate timestamp DEFAULT CURRENT_TIMESTAMP NULL, created_by int4 NULL, updated_by int4 NULL, CONSTRAINT order_pkey PRIMARY KEY (id), CONSTRAINT order_order_type_id_fkey FOREIGN KEY (order_type_id) REFERENCES demo.order_type(id));
+
+
+-- demo.selling_party definition
+
+-- Drop table
+
+-- DROP TABLE demo.selling_party;
+
+CREATE TABLE demo.selling_party ( id serial4 NOT NULL, "name" varchar(150) NULL, contact varchar(50) NULL, "location" text NULL, order_id int4 NULL, isactive bool DEFAULT true NULL, isdeleted bool DEFAULT false NULL, createdate timestamp DEFAULT CURRENT_TIMESTAMP NULL, updateddate timestamp DEFAULT CURRENT_TIMESTAMP NULL, created_by int4 NULL, updated_by int4 NULL, CONSTRAINT selling_party_pkey PRIMARY KEY (id), CONSTRAINT selling_party_order_id_fkey FOREIGN KEY (order_id) REFERENCES demo."order"(id));
+
+
+-- demo.trip definition
+
+-- Drop table
+
+-- DROP TABLE demo.trip;
+
+CREATE TABLE demo.trip ( trip_id serial4 NOT NULL, vehicle_id int4 NULL, driver_id int4 NULL, supervisor_id int4 NULL, route text NULL, "date" date NULL, pickup_id int4 NULL, drop_id int4 NULL, status varchar(50) NULL, createdate timestamp DEFAULT CURRENT_TIMESTAMP NULL, updateddate timestamp DEFAULT CURRENT_TIMESTAMP NULL, created_by int4 NULL, updated_by int4 NULL, buying_party_id int8 NULL, selling_party_id int8 NULL, CONSTRAINT trip_pkey PRIMARY KEY (trip_id), CONSTRAINT trip_driver_id_fkey FOREIGN KEY (driver_id) REFERENCES demo.driver(id), CONSTRAINT trip_supervisor_id_fkey FOREIGN KEY (supervisor_id) REFERENCES demo.supervisor(id), CONSTRAINT trip_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES demo.vehicle(id));
+
+
+-- demo.buying_party definition
+
+-- Drop table
+
+-- DROP TABLE demo.buying_party;
+
+CREATE TABLE demo.buying_party ( id serial4 NOT NULL, "name" varchar(150) NULL, contact varchar(50) NULL, "location" text NULL, order_id int4 NULL, isactive bool DEFAULT true NULL, isdeleted bool DEFAULT false NULL, createdate timestamp DEFAULT CURRENT_TIMESTAMP NULL, updateddate timestamp DEFAULT CURRENT_TIMESTAMP NULL, created_by int4 NULL, updated_by int4 NULL, CONSTRAINT buying_party_pkey PRIMARY KEY (id), CONSTRAINT buying_party_order_id_fkey FOREIGN KEY (order_id) REFERENCES demo."order"(id));
