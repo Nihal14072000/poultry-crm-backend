@@ -30,5 +30,7 @@ public class TripRetrieveResponse {
     private LocalDateTime updatedDate;
     private Integer createdBy;
     private Integer updatedBy;
+    private List<Payment> payments;
+    private List<Expenses> expenses;
 
 }

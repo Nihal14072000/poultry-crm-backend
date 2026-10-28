@@ -5,6 +5,8 @@ import com.example.demo.entity.BuyingParty;
 import com.example.demo.entity.Employee;
 import com.example.demo.entity.SellingParty;
 import com.example.demo.entity.TripPartyRelation;
+import com.example.demo.entity.Payment;
+import com.example.demo.entity.Expenses;
 import com.example.demo.dto.BuyingPartydto;
 import com.example.demo.dto.SellingPartydto;
 import com.example.demo.dto.TripRetrieveResponse;
@@ -17,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 @Service
 public class TripService extends CrudService<Trip> {
@@ -31,6 +34,8 @@ public class TripService extends CrudService<Trip> {
     private final SellingPartyService sellingPartyService;
     private final TripPartyRelationService tripPartyRelationService;
     private final PartyOrderRelationService partyOrderRelationService;
+    private final PaymentService paymentService;
+    private final ExpensesService expensesService;
 
     public TripService(
             TripRepository repository,
@@ -40,7 +45,9 @@ public class TripService extends CrudService<Trip> {
             BuyingPartyService buyingPartyService,
             SellingPartyService sellingPartyService,
             TripPartyRelationService tripPartyRelationService,
-            PartyOrderRelationService partyOrderRelationService
+            PartyOrderRelationService partyOrderRelationService,
+            PaymentService paymentService,
+            ExpensesService expensesService
     ) {
         super(repository, Trip::setTripId);
         this.tripRepository = repository;
@@ -51,6 +58,8 @@ public class TripService extends CrudService<Trip> {
         this.sellingPartyService = sellingPartyService;
         this.tripPartyRelationService = tripPartyRelationService;
         this.partyOrderRelationService = partyOrderRelationService;
+        this.paymentService = paymentService;
+        this.expensesService = expensesService;
     }
 
     @Transactional(readOnly = true)
@@ -82,6 +91,7 @@ public class TripService extends CrudService<Trip> {
     public TripRetrieveResponse createTrip(TripRetrieveResponse request) {
         Trip trip = tripRepository.save(toTrip(request));
         saveParties(trip.getTripId(), request);
+        saveFinanceDetails(trip.getTripId(), request);
         return toResponse(trip);
     }
 
@@ -141,6 +151,22 @@ public class TripService extends CrudService<Trip> {
                         })
                         .toList();
         tripPartyRelationService.replaceParties(tripId, buyingPartyIds, sellingPartyIds);
+    }
+
+    private void saveFinanceDetails(Integer tripId, TripRetrieveResponse request) {
+        for (Payment payment : request.getPayments() == null ? List.<Payment>of() : request.getPayments()) {
+            payment.setId(null);
+            payment.setTripId(tripId);
+            paymentService.create(payment);
+        }
+        for (Expenses expense : request.getExpenses() == null ? List.<Expenses>of() : request.getExpenses()) {
+            if (expense.getAmount() == null || expense.getAmount().signum() <= 0 || expense.getExpenseDate() == null)
+                throw new IllegalArgumentException("Each expense needs a positive amount and date");
+            expense.setId(null);
+            expense.setTripId(tripId);
+            if (expense.getCreateDate() == null) expense.setCreateDate(LocalDateTime.now());
+            expensesService.create(expense);
+        }
     }
 
     private BuyingParty saveBuyingParty(BuyingPartydto request) {
