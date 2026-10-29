@@ -15,6 +15,7 @@ import com.example.demo.repository.DeliveryRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -178,10 +179,17 @@ public class DeliveryService extends CrudService<Delivery> {
     }
 
     private DeliveryRetrieveResponse toResponse(Delivery delivery) {
-        List<VendorDeliveryRetrieveResponse> vendorDeliveries =
+        List<VendorDeliveryRetrieveResponse> vendorDeliveries = new ArrayList<>(
                 deliveryPartyRelationService.findActiveByDeliveryId(delivery.getId()).stream()
                         .map(this::toVendorDeliveryResponse)
-                        .toList();
+                        .toList()
+        );
+
+        if (delivery.getVendorDelieveryId() != null
+                && vendorDeliveries.stream().noneMatch(vd -> delivery.getVendorDelieveryId().equals(vd.getId()))) {
+            vendorDeliveryService.findById(delivery.getVendorDelieveryId())
+                    .ifPresent(vd -> vendorDeliveries.add(toVendorDeliveryResponse(vd, null)));
+        }
 
         Trip trip = delivery.getTripId() == null
                 ? null
@@ -225,8 +233,12 @@ public class DeliveryService extends CrudService<Delivery> {
         VendorDelivery vendorDelivery = vendorDeliveryService.findById(relation.getPartyId())
                 .orElseThrow(() -> new IllegalStateException(
                         "Vendor delivery not found for delivery-party relation " + relation.getId()));
+        return toVendorDeliveryResponse(vendorDelivery, relation.getId());
+    }
+
+    private VendorDeliveryRetrieveResponse toVendorDeliveryResponse(VendorDelivery vendorDelivery, Integer relationId) {
         return VendorDeliveryRetrieveResponse.builder()
-                .relationId(relation.getId())
+                .relationId(relationId)
                 .id(vendorDelivery.getId())
                 .sellingParty(vendorDelivery.getSellingPartyId() == null
                         ? null
