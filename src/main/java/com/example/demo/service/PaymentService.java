@@ -1,19 +1,182 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.PaymentRetrieveResponse;
+import com.example.demo.dto.BuyingPartydto;
+import com.example.demo.dto.SellingPartydto;
+import com.example.demo.dto.TripRetrieveResponse;
+import com.example.demo.entity.BuyingParty;
+import com.example.demo.entity.Employee;
+import com.example.demo.entity.Order;
 import com.example.demo.entity.Payment;
+import com.example.demo.entity.SellingParty;
+import com.example.demo.entity.Trip;
+import com.example.demo.repository.BuyingPartyRepository;
+import com.example.demo.repository.EmployeeRepository;
+import com.example.demo.repository.FinancePaymentAllocationRepository;
+import com.example.demo.repository.OrderRepository;
 import com.example.demo.repository.PaymentRepository;
+import com.example.demo.repository.SellingPartyRepository;
+import com.example.demo.repository.TripRepository;
+import com.example.demo.repository.VehicleRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 
+import java.util.List;
+import java.util.Optional;
+
 @Service
 public class PaymentService extends CrudService<Payment> {
     private final PaymentRepository repository;
+    private final BuyingPartyRepository buyingPartyRepository;
+    private final OrderRepository orderRepository;
+    private final TripRepository tripRepository;
+    private final SellingPartyRepository sellingPartyRepository;
+    private final FinancePaymentAllocationRepository allocationRepository;
+    private final VehicleRepository vehicleRepository;
+    private final EmployeeRepository employeeRepository;
+    private final TripPartyRelationService tripPartyRelationService;
+    private final PartyOrderRelationService partyOrderRelationService;
 
-    public PaymentService(PaymentRepository repository) {
+    public PaymentService(
+            PaymentRepository repository,
+            BuyingPartyRepository buyingPartyRepository,
+            OrderRepository orderRepository,
+            TripRepository tripRepository,
+            SellingPartyRepository sellingPartyRepository,
+            FinancePaymentAllocationRepository allocationRepository,
+            VehicleRepository vehicleRepository,
+            EmployeeRepository employeeRepository,
+            TripPartyRelationService tripPartyRelationService,
+            PartyOrderRelationService partyOrderRelationService
+    ) {
         super(repository, Payment::setId);
         this.repository = repository;
+        this.buyingPartyRepository = buyingPartyRepository;
+        this.orderRepository = orderRepository;
+        this.tripRepository = tripRepository;
+        this.sellingPartyRepository = sellingPartyRepository;
+        this.allocationRepository = allocationRepository;
+        this.vehicleRepository = vehicleRepository;
+        this.employeeRepository = employeeRepository;
+        this.tripPartyRelationService = tripPartyRelationService;
+        this.partyOrderRelationService = partyOrderRelationService;
+    }
+
+    @Transactional(readOnly = true)
+    public List<PaymentRetrieveResponse> retrieveAll() {
+        return repository.findAll().stream()
+                .map(this::toRetrieveResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<PaymentRetrieveResponse> retrieve(Integer id) {
+        return repository.findById(id).map(this::toRetrieveResponse);
+    }
+
+    private PaymentRetrieveResponse toRetrieveResponse(Payment payment) {
+        BuyingPartydto buyingParty = payment.getBuyingPartyId() == null
+                ? null
+                : buyingPartyRepository.findById(payment.getBuyingPartyId())
+                        .map(this::toBuyingPartyDto)
+                        .orElse(null);
+        Order actualOrder = payment.getActualOrderId() == null
+                ? null
+                : orderRepository.findById(payment.getActualOrderId()).orElse(null);
+        TripRetrieveResponse trip = payment.getTripId() == null
+                ? null
+                : tripRepository.findById(payment.getTripId())
+                        .map(this::toTripRetrieveResponse)
+                        .orElse(null);
+        SellingPartydto sellingParty = payment.getSellingPartyId() == null
+                ? null
+                : sellingPartyRepository.findById(payment.getSellingPartyId())
+                        .map(this::toSellingPartyDto)
+                        .orElse(null);
+
+        return PaymentRetrieveResponse.from(
+                payment,
+                buyingParty,
+                actualOrder,
+                trip,
+                sellingParty,
+                allocationRepository.findByPaymentId(payment.getId())
+        );
+    }
+
+    private TripRetrieveResponse toTripRetrieveResponse(Trip trip) {
+        var relations = tripPartyRelationService.findActiveByTripId(trip.getTripId());
+        return TripRetrieveResponse.builder()
+                .tripId(trip.getTripId())
+                //.vehicle(trip.getVehicleId() == null
+                 //       ? null
+                //: vehicleRepository.findById(trip.getVehicleId()).orElse(null))
+                //.driver(findEmployee(trip.getDriverId()))
+                //.supervisor(findEmployee(trip.getSupervisorId()))
+                .buyingParties(relations.stream()
+                        .filter(relation -> "B".equals(relation.getPartyType()))
+                        .map(relation -> buyingPartyRepository.findById(relation.getPartyId())
+                                .map(this::toBuyingPartyDto)
+                                .orElseThrow(() -> new IllegalStateException(
+                                        "Buying party not found for trip-party relation "
+                                                + relation.getRelationId())))
+                        .toList())
+                .sellingParties(relations.stream()
+                        .filter(relation -> "S".equals(relation.getPartyType()))
+                        .map(relation -> sellingPartyRepository.findById(relation.getPartyId())
+                                .map(this::toSellingPartyDto)
+                                .orElseThrow(() -> new IllegalStateException(
+                                        "Selling party not found for trip-party relation "
+                                                + relation.getRelationId())))
+                        .toList())
+                .route(trip.getRoute())
+                .date(trip.getDate())
+                .pickupId(trip.getPickupId())
+                .dropId(trip.getDropId())
+                .status(trip.getStatus())
+                .createDate(trip.getCreateDate())
+                .updatedDate(trip.getUpdatedDate())
+                .createdBy(trip.getCreatedBy())
+                .updatedBy(trip.getUpdatedBy())
+                .build();
+    }
+
+    private Employee findEmployee(Integer employeeId) {
+        return employeeId == null ? null : employeeRepository.findById(employeeId).orElse(null);
+    }
+
+    private BuyingPartydto toBuyingPartyDto(BuyingParty party) {
+        return BuyingPartydto.builder()
+                .id(party.getId())
+                .name(party.getName())
+                .contact(party.getContact())
+                .location(party.getLocation())
+                .order(partyOrderRelationService.findActiveOrders(party.getId(), "B"))
+                .isActive(party.getIsActive())
+                .isDeleted(party.getIsDeleted())
+                .createDate(party.getCreateDate())
+                .updatedDate(party.getUpdatedDate())
+                .createdBy(party.getCreatedBy())
+                .updatedBy(party.getUpdatedBy())
+                .build();
+    }
+
+    private SellingPartydto toSellingPartyDto(SellingParty party) {
+        return SellingPartydto.builder()
+                .id(party.getId())
+                .name(party.getName())
+                .contact(party.getContact())
+                .location(party.getLocation())
+                .order(partyOrderRelationService.findActiveOrders(party.getId(), "S"))
+                .isActive(party.getIsActive())
+                .isDeleted(party.getIsDeleted())
+                .createDate(party.getCreateDate())
+                .updatedDate(party.getUpdatedDate())
+                .createdBy(party.getCreatedBy())
+                .updatedBy(party.getUpdatedBy())
+                .build();
     }
 
     @Override

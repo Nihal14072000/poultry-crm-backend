@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.PaymentRetrieveResponse;
 import com.example.demo.entity.Payment;
 import com.example.demo.service.PaymentService;
 import org.springframework.http.HttpStatus;
@@ -29,9 +30,19 @@ public class PaymentController {
         return service.findAll();
     }
 
+    @GetMapping("/retrieve")
+    public List<PaymentRetrieveResponse> retrieveAll() {
+        return service.retrieveAll();
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Payment> findById(@PathVariable Integer id) {
         return service.findById(id).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{id}/retrieve")
+    public ResponseEntity<PaymentRetrieveResponse> retrieve(@PathVariable Integer id) {
+        return service.retrieve(id).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping
