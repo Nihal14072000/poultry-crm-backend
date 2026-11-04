@@ -111,13 +111,13 @@ public class TripService extends CrudService<Trip> {
     private Trip toTrip(TripRetrieveResponse request) {
         Trip trip = new Trip();
         if (request.getVehicle() != null) {
-            trip.setVehicleId(vehicleService.create(request.getVehicle()).getId());
+            trip.setVehicleId(request.getVehicle().getId());
         }
         if (request.getDriver() != null) {
-            trip.setDriverId(driverService.create(request.getDriver()).getId());
+            trip.setDriverId(request.getDriver().getId());
         }
         if (request.getSupervisor() != null) {
-            trip.setSupervisorId(supervisorService.create(request.getSupervisor()).getId());
+            trip.setSupervisorId(request.getSupervisor().getId());
         }
         trip.setRoute(request.getRoute());
         trip.setDate(request.getDate());
