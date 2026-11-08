@@ -1,5 +1,7 @@
 package com.example.demo.service;
 
+import com.example.demo.entity.ActiveRecord;
+import com.example.demo.entity.CreatedRecord;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -8,7 +10,7 @@ import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 
-public class CrudService<T> {
+public class CrudService<T extends CreatedRecord> {
 
     private final JpaRepository<T, Integer> repository;
     private final BiConsumer<T, Integer> idSetter;
@@ -20,12 +22,18 @@ public class CrudService<T> {
 
     @Transactional(readOnly = true)
     public List<T> findAll() {
-        return repository.findAll();
+        List<T> records = repository.findAll().stream()
+                .filter(record -> !(record instanceof ActiveRecord activeRecord)
+                        || ActiveRecord.isActiveRecord(activeRecord))
+                .toList();
+        return CreatedRecord.newestFirst(records);
     }
 
     @Transactional(readOnly = true)
     public Optional<T> findById(Integer id) {
-        return repository.findById(id);
+        return repository.findById(id)
+                .filter(record -> !(record instanceof ActiveRecord activeRecord)
+                        || ActiveRecord.isActiveRecord(activeRecord));
     }
 
     @Transactional

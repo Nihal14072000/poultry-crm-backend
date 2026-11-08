@@ -59,7 +59,7 @@ public class DeliveryService extends CrudService<Delivery> {
 
     @Transactional(readOnly = true)
     public Optional<DeliveryRetrieveResponse> retrieve(Integer deliveryId) {
-        return deliveryRepository.findById(deliveryId)
+        return findById(deliveryId)
                 .map(this::toResponse);
     }
 

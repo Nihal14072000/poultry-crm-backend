@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @Table(name = "trip", schema = "demo")
 @Data
 @NoArgsConstructor
-public class Trip {
+public class Trip implements CreatedRecord {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "trip_id")
@@ -48,4 +48,9 @@ public class Trip {
     private Integer buyingPartyId;
     @Column(name = "selling_party_id")
     private Integer sellingPartyId;
+
+    @Override
+    public LocalDateTime getCreatedAtForSort() {
+        return createDate;
+    }
 }

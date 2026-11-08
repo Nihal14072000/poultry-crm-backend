@@ -1,6 +1,8 @@
 package com.example.demo.service;
 
 import com.example.demo.entity.TripPartyRelation;
+import com.example.demo.entity.ActiveRecord;
+import com.example.demo.entity.CreatedRecord;
 import com.example.demo.repository.TripPartyRelationRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,9 +39,9 @@ public class TripPartyRelationService {
 
     @Transactional(readOnly = true)
     public List<TripPartyRelation> findActiveByTripId(Integer tripId) {
-        return repository.findByTripId(tripId).stream()
-                .filter(this::isActive)
-                .toList();
+        return CreatedRecord.newestFirst(repository.findByTripId(tripId).stream()
+                .filter(ActiveRecord::isActiveRecord)
+                .toList());
     }
 
     private void addRelations(
@@ -72,7 +74,7 @@ public class TripPartyRelationService {
     }
 
     private boolean isActive(TripPartyRelation relation) {
-        return !Boolean.TRUE.equals(relation.getIsDeleted())
-                && !Boolean.FALSE.equals(relation.getIsActive());
+        return Boolean.TRUE.equals(relation.getIsActive())
+                && Boolean.FALSE.equals(relation.getIsDeleted());
     }
 }

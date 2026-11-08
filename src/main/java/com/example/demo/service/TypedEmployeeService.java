@@ -1,6 +1,8 @@
 package com.example.demo.service;
 
 import com.example.demo.entity.Employee;
+import com.example.demo.entity.CreatedRecord;
+import com.example.demo.entity.ActiveRecord;
 import com.example.demo.repository.EmployeeRepository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,13 +30,17 @@ public abstract class TypedEmployeeService extends CrudService<Employee> {
     @Override
     @Transactional(readOnly = true)
     public List<Employee> findAll() {
-        return repository.findAllByType(employeeType);
+        return CreatedRecord.newestFirst(repository.findAllByType(employeeType).stream()
+                .filter(ActiveRecord::isActiveRecord)
+                .toList());
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<Employee> findById(Integer id) {
-        return repository.findByIdAndType(id, employeeType);
+        return repository.findByIdAndType(id, employeeType)
+                .filter(employee -> Boolean.TRUE.equals(employee.getIsActive())
+                        && Boolean.FALSE.equals(employee.getIsDeleted()));
     }
 
     @Override

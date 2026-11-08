@@ -1,6 +1,8 @@
 package com.example.demo.service;
 
 import com.example.demo.entity.DeliveryPartyRelation;
+import com.example.demo.entity.ActiveRecord;
+import com.example.demo.entity.CreatedRecord;
 import com.example.demo.repository.DeliveryPartyRelationRepository;
 import org.springframework.stereotype.Service;
 
@@ -16,13 +18,12 @@ public class DeliveryPartyRelationService extends CrudService<DeliveryPartyRelat
     }
 
     public List<DeliveryPartyRelation> findByDeliveryId(Integer deliveryId) {
-        return repository.findByDeliveryId(deliveryId);
+        return CreatedRecord.newestFirst(repository.findByDeliveryId(deliveryId).stream()
+                .filter(ActiveRecord::isActiveRecord)
+                .toList());
     }
 
     public List<DeliveryPartyRelation> findActiveByDeliveryId(Integer deliveryId) {
-        return repository.findByDeliveryId(deliveryId).stream()
-                .filter(relation -> !Boolean.TRUE.equals(relation.getIsDeleted())
-                        && !Boolean.FALSE.equals(relation.getIsActive()))
-                .toList();
+        return findByDeliveryId(deliveryId);
     }
 }

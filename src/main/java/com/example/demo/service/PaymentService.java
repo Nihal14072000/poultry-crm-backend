@@ -5,6 +5,7 @@ import com.example.demo.dto.BuyingPartydto;
 import com.example.demo.dto.SellingPartydto;
 import com.example.demo.dto.TripRetrieveResponse;
 import com.example.demo.entity.BuyingParty;
+import com.example.demo.entity.ActiveRecord;
 import com.example.demo.entity.Employee;
 import com.example.demo.entity.Order;
 import com.example.demo.entity.Payment;
@@ -66,25 +67,27 @@ public class PaymentService extends CrudService<Payment> {
 
     @Transactional(readOnly = true)
     public List<PaymentRetrieveResponse> retrieveAll() {
-        return repository.findAll().stream()
+        return findAll().stream()
                 .map(this::toRetrieveResponse)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public Optional<PaymentRetrieveResponse> retrieve(Integer id) {
-        return repository.findById(id).map(this::toRetrieveResponse);
+        return findById(id).map(this::toRetrieveResponse);
     }
 
     private PaymentRetrieveResponse toRetrieveResponse(Payment payment) {
         BuyingPartydto buyingParty = payment.getBuyingPartyId() == null
                 ? null
                 : buyingPartyRepository.findById(payment.getBuyingPartyId())
+                        .filter(ActiveRecord::isActiveRecord)
                         .map(this::toBuyingPartyDto)
                         .orElse(null);
         Order actualOrder = payment.getActualOrderId() == null
                 ? null
-                : orderRepository.findById(payment.getActualOrderId()).orElse(null);
+                : orderRepository.findById(payment.getActualOrderId())
+                        .filter(ActiveRecord::isActiveRecord).orElse(null);
         TripRetrieveResponse trip = payment.getTripId() == null
                 ? null
                 : tripRepository.findById(payment.getTripId())
@@ -93,6 +96,7 @@ public class PaymentService extends CrudService<Payment> {
         SellingPartydto sellingParty = payment.getSellingPartyId() == null
                 ? null
                 : sellingPartyRepository.findById(payment.getSellingPartyId())
+                        .filter(ActiveRecord::isActiveRecord)
                         .map(this::toSellingPartyDto)
                         .orElse(null);
 
@@ -118,6 +122,7 @@ public class PaymentService extends CrudService<Payment> {
                 .buyingParties(relations.stream()
                         .filter(relation -> "B".equals(relation.getPartyType()))
                         .map(relation -> buyingPartyRepository.findById(relation.getPartyId())
+                                .filter(ActiveRecord::isActiveRecord)
                                 .map(this::toBuyingPartyDto)
                                 .orElseThrow(() -> new IllegalStateException(
                                         "Buying party not found for trip-party relation "
@@ -126,6 +131,7 @@ public class PaymentService extends CrudService<Payment> {
                 .sellingParties(relations.stream()
                         .filter(relation -> "S".equals(relation.getPartyType()))
                         .map(relation -> sellingPartyRepository.findById(relation.getPartyId())
+                                .filter(ActiveRecord::isActiveRecord)
                                 .map(this::toSellingPartyDto)
                                 .orElseThrow(() -> new IllegalStateException(
                                         "Selling party not found for trip-party relation "
@@ -199,7 +205,18 @@ public class PaymentService extends CrudService<Payment> {
     }
 
     private void validate(Payment payment) {
-        if (payment.getPaymentType() == null) return; // Allows legacy payment records.
+        boolean hasBuyingParty = payment.getBuyingPartyId() != null;
+        boolean hasSellingParty = payment.getSellingPartyId() != null;
+        if (hasBuyingParty && hasSellingParty)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Payment must reference only one party");
+        if (hasBuyingParty) {
+            payment.setPaymentType("BUYER_RECEIPT");
+        } else if (hasSellingParty) {
+            payment.setPaymentType("SELLER_PAYOUT");
+        } else if (payment.getPaymentType() == null) {
+            return; // Allows legacy payment records.
+        }
+
         boolean buyer = "BUYER_RECEIPT".equals(payment.getPaymentType());
         boolean seller = "SELLER_PAYOUT".equals(payment.getPaymentType());
         if (!buyer && !seller) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported payment type");
