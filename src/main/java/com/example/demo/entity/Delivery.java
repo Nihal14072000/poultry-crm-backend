@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Table(name = "delievery", schema = "demo")
 @Data
 @NoArgsConstructor
-public class Delivery {
+public class Delivery implements ActiveRecord {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -52,4 +52,9 @@ public class Delivery {
 
     @Column(name = "updated_by")
     private Integer updatedBy;
+
+    @Override
+    public LocalDateTime getCreatedAtForSort() {
+        return createDate;
+    }
 }

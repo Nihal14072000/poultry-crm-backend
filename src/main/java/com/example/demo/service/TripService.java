@@ -64,13 +64,13 @@ public class TripService extends CrudService<Trip> {
 
     @Transactional(readOnly = true)
     public Optional<TripRetrieveResponse> retrieve(Integer tripId) {
-        return tripRepository.findById(tripId)
+        return findById(tripId)
                 .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
     public Optional<List<Employee>> findDriversAssignedToVehicleForTrip(Integer tripId) {
-        return tripRepository.findById(tripId)
+        return findById(tripId)
                 .map(trip -> trip.getVehicleId() == null
                         ? List.of()
                         : driverService.findAssignedToVehicle(trip.getVehicleId()));
@@ -78,7 +78,7 @@ public class TripService extends CrudService<Trip> {
 
     @Transactional(readOnly = true)
     public List<TripVehicleDriversResponse> findVehicleDriversForAllTrips() {
-        return tripRepository.findAll().stream()
+        return findAll().stream()
                 .map(trip -> TripVehicleDriversResponse.builder()
                         .tripId(trip.getTripId())
                         .vehicle(vehicleService.findById(trip.getVehicleId()).orElse(null))
@@ -97,7 +97,8 @@ public class TripService extends CrudService<Trip> {
 
     @Transactional
     public Optional<TripRetrieveResponse> updateTrip(Integer tripId, TripRetrieveResponse request) {
-        if (!tripRepository.existsById(tripId)) {
+        Trip existingTrip = tripRepository.findById(tripId).orElse(null);
+        if (existingTrip == null) {
             return Optional.empty();
         }
 

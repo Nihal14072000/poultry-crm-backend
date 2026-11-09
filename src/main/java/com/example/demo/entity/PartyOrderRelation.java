@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @Table(name = "party_order_relation", schema = "demo")
 @Data
 @NoArgsConstructor
-public class PartyOrderRelation {
+public class PartyOrderRelation implements ActiveRecord {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "relation_id")
@@ -47,4 +47,9 @@ public class PartyOrderRelation {
 
     @Column(name = "party_type", length = 250)
     private String partyType;
+
+    @Override
+    public LocalDateTime getCreatedAtForSort() {
+        return createDate;
+    }
 }

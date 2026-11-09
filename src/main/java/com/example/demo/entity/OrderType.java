@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @Table(name = "order_type", schema = "demo")
 @Data
 @NoArgsConstructor
-public class OrderType {
+public class OrderType implements ActiveRecord {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -29,4 +29,9 @@ public class OrderType {
     private LocalDateTime createDate;
     @Column(name = "updateddate")
     private LocalDateTime updatedDate;
+
+    @Override
+    public LocalDateTime getCreatedAtForSort() {
+        return createDate;
+    }
 }

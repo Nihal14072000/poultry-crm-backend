@@ -17,7 +17,7 @@ import java.math.BigDecimal;
 @Table(name = "payment", schema = "demo")
 @Data
 @NoArgsConstructor
-public class Payment {
+public class Payment implements ActiveRecord {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "payment_id_seq")
     @jakarta.persistence.SequenceGenerator(name = "payment_id_seq", sequenceName = "payment_id_seq", schema = "demo", allocationSize = 1)
@@ -52,6 +52,11 @@ public class Payment {
 
     @Column(name = "updated_by")
     private Integer updatedBy;
+
+    @Override
+    public LocalDateTime getCreatedAtForSort() {
+        return createDate;
+    }
 
     @Column(name = "payment_type", length = 20)
     private String paymentType;

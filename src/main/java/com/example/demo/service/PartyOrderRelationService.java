@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import com.example.demo.entity.Order;
+import com.example.demo.entity.ActiveRecord;
 import com.example.demo.entity.PartyOrderRelation;
 import com.example.demo.repository.PartyOrderRelationRepository;
 import org.springframework.stereotype.Service;
@@ -61,12 +62,13 @@ public class PartyOrderRelationService {
 
     @Transactional(readOnly = true)
     public List<Order> findActiveOrders(Integer partyId, String partyType) {
-        return repository.findByPartyIdAndPartyType(partyId, partyType).stream()
-                .filter(this::isActive)
+        List<Order> orders = repository.findByPartyIdAndPartyType(partyId, partyType).stream()
+                .filter(ActiveRecord::isActiveRecord)
                 .map(relation -> orderService.findById(relation.getOrderId())
                         .orElseThrow(() -> new IllegalStateException(
                                 "Order not found for party-order relation " + relation.getRelationId())))
                 .toList();
+        return com.example.demo.entity.CreatedRecord.newestFirst(orders);
     }
 
     private void deactivate(PartyOrderRelation relation, LocalDateTime now) {
@@ -76,7 +78,7 @@ public class PartyOrderRelationService {
     }
 
     private boolean isActive(PartyOrderRelation relation) {
-        return !Boolean.TRUE.equals(relation.getIsDeleted())
-                && !Boolean.FALSE.equals(relation.getIsActive());
+        return Boolean.TRUE.equals(relation.getIsActive())
+                && Boolean.FALSE.equals(relation.getIsDeleted());
     }
 }

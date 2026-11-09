@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.data.domain.Sort;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -28,8 +29,13 @@ public class FinanceService {
         this.settlements = settlements; this.allocations = allocations; this.payments = payments; this.views = views;
     }
 
-    public List<FinanceOrderSettlement> settlements() { return settlements.findAll(); }
-    public List<FinanceOrderSettlement> tripSettlements(Integer tripId) { return settlements.findByTripIdAndStatusNot(tripId, "VOID"); }
+    public List<FinanceOrderSettlement> settlements() {
+        return settlements.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
+    }
+
+    public List<FinanceOrderSettlement> tripSettlements(Integer tripId) {
+        return settlements.findByTripIdAndStatusNotOrderByCreatedAtDesc(tripId, "VOID");
+    }
 
     @Transactional
     public FinanceOrderSettlement createSettlement(FinanceOrderSettlement settlement) {
