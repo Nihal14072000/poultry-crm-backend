@@ -2,8 +2,8 @@ package com.example.demo.service;
 
 import com.example.demo.entity.DeliveryPartyRelation;
 import com.example.demo.entity.ActiveRecord;
-import com.example.demo.entity.CreatedRecord;
 import com.example.demo.repository.DeliveryPartyRelationRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,9 +18,9 @@ public class DeliveryPartyRelationService extends CrudService<DeliveryPartyRelat
     }
 
     public List<DeliveryPartyRelation> findByDeliveryId(Integer deliveryId) {
-        return CreatedRecord.newestFirst(repository.findByDeliveryId(deliveryId).stream()
+        return repository.findByDeliveryId(deliveryId, Sort.by(Sort.Order.desc("createDate").nullsLast())).stream()
                 .filter(ActiveRecord::isActiveRecord)
-                .toList());
+                .toList();
     }
 
     public List<DeliveryPartyRelation> findActiveByDeliveryId(Integer deliveryId) {

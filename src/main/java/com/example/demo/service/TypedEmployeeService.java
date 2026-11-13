@@ -1,9 +1,9 @@
 package com.example.demo.service;
 
 import com.example.demo.entity.Employee;
-import com.example.demo.entity.CreatedRecord;
 import com.example.demo.entity.ActiveRecord;
 import com.example.demo.repository.EmployeeRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -30,9 +30,9 @@ public abstract class TypedEmployeeService extends CrudService<Employee> {
     @Override
     @Transactional(readOnly = true)
     public List<Employee> findAll() {
-        return CreatedRecord.newestFirst(repository.findAllByType(employeeType).stream()
+        return repository.findAllByType(employeeType, Sort.by(Sort.Order.desc("createDate").nullsLast())).stream()
                 .filter(ActiveRecord::isActiveRecord)
-                .toList());
+                .toList();
     }
 
     @Override

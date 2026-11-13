@@ -27,6 +27,8 @@ public class Trip implements CreatedRecord {
     private Integer driverId;
     @Column(name = "supervisor_id")
     private Integer supervisorId;
+    @Column(name = "labour_id")
+    private Integer labourId;
     private String route;
     @Column(name = "\"date\"")
     private LocalDate date;

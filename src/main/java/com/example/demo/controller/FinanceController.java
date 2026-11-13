@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.FinanceSummaryResponse;
 import com.example.demo.entity.FinanceOrderSettlement;
 import com.example.demo.entity.FinancePaymentAllocation;
 import com.example.demo.service.FinanceService;
@@ -46,5 +47,12 @@ public class FinanceController {
     @GetMapping("/trips/summary")
     public List<Map<String, Object>> tripSummary(@RequestParam(required = false) Integer tripId) {
         return service.tripSummaries(tripId);
+    }
+
+    @GetMapping("/summary")
+    public FinanceSummaryResponse summary(
+            @RequestParam(required = false) Integer buyingPartyId,
+            @RequestParam(required = false) Integer sellingPartyId) {
+        return service.summary(buyingPartyId, sellingPartyId);
     }
 }

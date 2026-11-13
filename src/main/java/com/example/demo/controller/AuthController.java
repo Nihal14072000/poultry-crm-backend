@@ -35,6 +35,6 @@ public class AuthController {
     @GetMapping("/me")
     public Map<String, String> me(Principal principal) {
         var account = accounts.findByUsername(principal.getName()).orElseThrow();
-        return Map.of("name", account.getUsername(), "role", account.getRole().name());
+        return Map.of("name", account.getUsername(), "role", account.getRole().name(), "id", account.getId().toString());
     }
 }

@@ -19,6 +19,7 @@ public class TripRetrieveResponse {
     private Vehicle vehicle;
     private Employee driver;
     private Employee supervisor;
+    private Employee labour;
     private List<BuyingPartydto> buyingParties;
     private List<SellingPartydto> sellingParties;
     private String route;

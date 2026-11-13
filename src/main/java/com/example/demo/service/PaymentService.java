@@ -19,6 +19,7 @@ import com.example.demo.repository.PaymentRepository;
 import com.example.demo.repository.SellingPartyRepository;
 import com.example.demo.repository.TripRepository;
 import com.example.demo.repository.VehicleRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -27,6 +28,7 @@ import org.springframework.http.HttpStatus;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 public class PaymentService extends CrudService<Payment> {
     private final PaymentRepository repository;
@@ -78,36 +80,45 @@ public class PaymentService extends CrudService<Payment> {
     }
 
     private PaymentRetrieveResponse toRetrieveResponse(Payment payment) {
-        BuyingPartydto buyingParty = payment.getBuyingPartyId() == null
-                ? null
-                : buyingPartyRepository.findById(payment.getBuyingPartyId())
-                        .filter(ActiveRecord::isActiveRecord)
-                        .map(this::toBuyingPartyDto)
-                        .orElse(null);
-        Order actualOrder = payment.getActualOrderId() == null
-                ? null
-                : orderRepository.findById(payment.getActualOrderId())
-                        .filter(ActiveRecord::isActiveRecord).orElse(null);
-        TripRetrieveResponse trip = payment.getTripId() == null
-                ? null
-                : tripRepository.findById(payment.getTripId())
-                        .map(this::toTripRetrieveResponse)
-                        .orElse(null);
-        SellingPartydto sellingParty = payment.getSellingPartyId() == null
-                ? null
-                : sellingPartyRepository.findById(payment.getSellingPartyId())
-                        .filter(ActiveRecord::isActiveRecord)
-                        .map(this::toSellingPartyDto)
-                        .orElse(null);
+        try{
+            BuyingPartydto buyingParty = payment.getBuyingPartyId() == null
+                    ? null
+                    : buyingPartyRepository.findById(payment.getBuyingPartyId())
+                    .filter(ActiveRecord::isActiveRecord)
+                    .map(this::toBuyingPartyDto)
+                    .orElse(null);
+            Order actualOrder = payment.getActualOrderId() == null
+                    ? null
+                    : orderRepository.findById(payment.getActualOrderId())
+                    .filter(ActiveRecord::isActiveRecord).orElse(null);
+            TripRetrieveResponse trip = payment.getTripId() == null
+                    ? null
+                    : tripRepository.findById(payment.getTripId())
+                    .map(this::toTripRetrieveResponse)
+                    .orElse(null);
+            SellingPartydto sellingParty = payment.getSellingPartyId() == null
+                    ? null
+                    : sellingPartyRepository.findById(payment.getSellingPartyId())
+                    .filter(ActiveRecord::isActiveRecord)
+                    .map(this::toSellingPartyDto)
+                    .orElse(null);
 
-        return PaymentRetrieveResponse.from(
-                payment,
-                buyingParty,
-                actualOrder,
-                trip,
-                sellingParty,
-                allocationRepository.findByPaymentId(payment.getId())
-        );
+            return PaymentRetrieveResponse.from(
+                    payment,
+                    buyingParty,
+                    actualOrder,
+                    trip,
+                    sellingParty,
+                    allocationRepository.findByPaymentId(payment.getId())
+            );
+
+        } catch (Exception e) {
+            log.info("Error retrieving payment with ID {}: {}", payment.getId(), e.getMessage());
+            return null;
+        }
+
+
+
     }
 
     private TripRetrieveResponse toTripRetrieveResponse(Trip trip) {

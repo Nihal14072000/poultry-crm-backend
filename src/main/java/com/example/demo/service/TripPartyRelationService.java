@@ -2,8 +2,8 @@ package com.example.demo.service;
 
 import com.example.demo.entity.TripPartyRelation;
 import com.example.demo.entity.ActiveRecord;
-import com.example.demo.entity.CreatedRecord;
 import com.example.demo.repository.TripPartyRelationRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,9 +39,9 @@ public class TripPartyRelationService {
 
     @Transactional(readOnly = true)
     public List<TripPartyRelation> findActiveByTripId(Integer tripId) {
-        return CreatedRecord.newestFirst(repository.findByTripId(tripId).stream()
+        return repository.findByTripId(tripId, Sort.by(Sort.Order.desc("createDate").nullsLast())).stream()
                 .filter(ActiveRecord::isActiveRecord)
-                .toList());
+                .toList();
     }
 
     private void addRelations(

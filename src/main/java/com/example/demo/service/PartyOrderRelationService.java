@@ -1,7 +1,6 @@
 package com.example.demo.service;
 
 import com.example.demo.entity.Order;
-import com.example.demo.entity.ActiveRecord;
 import com.example.demo.entity.PartyOrderRelation;
 import com.example.demo.repository.PartyOrderRelationRepository;
 import org.springframework.stereotype.Service;
@@ -10,9 +9,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class PartyOrderRelationService {
+    public static final String BUYING_PARTY_TYPE = "B";
+    public static final String SELLING_PARTY_TYPE = "S";
     public static final String SUPPLIER_PICKUP_PARTY_TYPE = "SUPPLIER_PICKUP";
     public static final String VENDOR_DELIVERY_PARTY_TYPE = "VENDOR_DELIVERY";
 
@@ -60,15 +63,45 @@ public class PartyOrderRelationService {
         repository.saveAll(newRelations);
     }
 
+    @Transactional
+    public void addOrders(Integer partyId, List<Order> orders, String partyType) {
+        if (orders == null) {
+            return;
+        }
+
+        Set<Integer> activeOrderIds = repository.findByPartyIdAndPartyType(partyId, partyType).stream()
+                .filter(this::isActive)
+                .map(PartyOrderRelation::getOrderId)
+                .collect(Collectors.toSet());
+        LocalDateTime now = LocalDateTime.now();
+        List<PartyOrderRelation> newRelations = new ArrayList<>();
+        for (Order requestedOrder : orders) {
+            Order order = requestedOrder.getId() == null
+                    ? orderService.create(requestedOrder)
+                    : orderService.findById(requestedOrder.getId())
+                            .orElseThrow(() -> new IllegalArgumentException(
+                                    "Order not found: " + requestedOrder.getId()));
+            if (!activeOrderIds.add(order.getId())) {
+                continue;
+            }
+
+            PartyOrderRelation relation = new PartyOrderRelation();
+            relation.setPartyId(partyId);
+            relation.setOrderId(order.getId());
+            relation.setPartyType(partyType);
+            relation.setIsActive(true);
+            relation.setIsDeleted(false);
+            relation.setCreateDate(now);
+            newRelations.add(relation);
+        }
+        if (!newRelations.isEmpty()) {
+            repository.saveAll(newRelations);
+        }
+    }
+
     @Transactional(readOnly = true)
     public List<Order> findActiveOrders(Integer partyId, String partyType) {
-        List<Order> orders = repository.findByPartyIdAndPartyType(partyId, partyType).stream()
-                .filter(ActiveRecord::isActiveRecord)
-                .map(relation -> orderService.findById(relation.getOrderId())
-                        .orElseThrow(() -> new IllegalStateException(
-                                "Order not found for party-order relation " + relation.getRelationId())))
-                .toList();
-        return com.example.demo.entity.CreatedRecord.newestFirst(orders);
+        return orderService.findActiveByPartyIdAndPartyType(partyId, partyType);
     }
 
     private void deactivate(PartyOrderRelation relation, LocalDateTime now) {

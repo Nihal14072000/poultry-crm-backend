@@ -2,12 +2,12 @@ package com.example.demo.service;
 
 import com.example.demo.entity.ActiveRecord;
 import com.example.demo.entity.CreatedRecord;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 
 public class CrudService<T extends CreatedRecord> {
@@ -22,11 +22,15 @@ public class CrudService<T extends CreatedRecord> {
 
     @Transactional(readOnly = true)
     public List<T> findAll() {
-        List<T> records = repository.findAll().stream()
+        return findAll(Sort.by(Sort.Order.desc("createDate").nullsLast()));
+    }
+
+    @Transactional(readOnly = true)
+    protected List<T> findAll(Sort sort) {
+        return repository.findAll(sort).stream()
                 .filter(record -> !(record instanceof ActiveRecord activeRecord)
                         || ActiveRecord.isActiveRecord(activeRecord))
                 .toList();
-        return CreatedRecord.newestFirst(records);
     }
 
     @Transactional(readOnly = true)

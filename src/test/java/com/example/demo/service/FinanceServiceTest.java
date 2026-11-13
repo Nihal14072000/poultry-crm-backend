@@ -5,6 +5,9 @@ import com.example.demo.entity.FinancePaymentAllocation;
 import com.example.demo.entity.Payment;
 import com.example.demo.entity.Expenses;
 import com.example.demo.entity.Trip;
+import com.example.demo.entity.BuyingParty;
+import com.example.demo.entity.Order;
+import com.example.demo.dto.BuyingPartydto;
 import com.example.demo.dto.TripRetrieveResponse;
 import com.example.demo.repository.FinanceOrderSettlementRepository;
 import com.example.demo.repository.FinancePaymentAllocationRepository;
@@ -20,6 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 
 class FinanceServiceTest {
     @Test
@@ -57,11 +61,45 @@ class FinanceServiceTest {
         var payment = new Payment(); payment.setPaymentType("BUYER_RECEIPT"); payment.setBuyingPartyId(2); payment.setAmount(BigDecimal.ONE); payment.setStatus("COMPLETED");
         var expense = new Expenses(); expense.setAmount(BigDecimal.ONE); expense.setExpenseDate(java.time.LocalDate.now()); expense.setCategory("Fuel");
         var request = new TripRetrieveResponse(); request.setPayments(java.util.List.of(payment)); request.setExpenses(java.util.List.of(expense));
-        var service = new TripService(tripRepository, mock(VehicleService.class), mock(DriverService.class), mock(SupervisorService.class), mock(BuyingPartyService.class), mock(SellingPartyService.class), relations, mock(PartyOrderRelationService.class), paymentService, expensesService);
+        var service = new TripService(tripRepository, mock(VehicleService.class), mock(DriverService.class), mock(SupervisorService.class), mock(EmployeeService.class), mock(BuyingPartyService.class), mock(SellingPartyService.class), relations, mock(PartyOrderRelationService.class), paymentService, expensesService);
 
         service.createTrip(request);
 
         assertEquals(7, payment.getTripId()); assertEquals(7, expense.getTripId());
         verify(paymentService).create(payment); verify(expensesService).create(expense);
+    }
+
+    @Test
+    void tripCreationAddsPartyOrdersWithoutReplacingExistingRelations() {
+        var tripRepository = mock(com.example.demo.repository.TripRepository.class);
+        var tripRelations = mock(TripPartyRelationService.class);
+        var buyingPartyService = mock(BuyingPartyService.class);
+        var partyOrderRelations = mock(PartyOrderRelationService.class);
+        var savedTrip = new Trip(); savedTrip.setTripId(7);
+        var party = new BuyingParty(); party.setId(2);
+        var order = new Order(); order.setId(3);
+        var partyRequest = new BuyingPartydto(); partyRequest.setOrder(java.util.List.of(order));
+        var request = new TripRetrieveResponse(); request.setBuyingParties(java.util.List.of(partyRequest));
+        when(tripRepository.save(any())).thenReturn(savedTrip);
+        when(tripRelations.findActiveByTripId(7)).thenReturn(java.util.List.of());
+        when(buyingPartyService.create(any())).thenReturn(party);
+
+        var service = new TripService(
+                tripRepository,
+                mock(VehicleService.class),
+                mock(DriverService.class),
+                mock(SupervisorService.class),
+                mock(EmployeeService.class),
+                buyingPartyService,
+                mock(SellingPartyService.class),
+                tripRelations,
+                partyOrderRelations,
+                mock(PaymentService.class),
+                mock(ExpensesService.class));
+
+        service.createTrip(request);
+
+        verify(partyOrderRelations).addOrders(2, java.util.List.of(order), "B");
+        verify(partyOrderRelations, never()).replaceOrders(2, java.util.List.of(order), "B");
     }
 }
