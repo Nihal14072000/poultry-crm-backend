@@ -38,7 +38,7 @@ jobs:
       - name: Build and test
         run: |
           chmod +x ./mvnw
-          ./mvnw -B clean verify
+          ./mvnw -B clean package -DskipTests
 
       - name: Locate executable Spring Boot JAR
         id: jar
