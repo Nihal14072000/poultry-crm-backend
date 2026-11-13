@@ -112,7 +112,7 @@ jobs:
           fi
 
           nohup java -jar "$DEPLOY_PATH/app.jar" \
-            --spring.config.additional-location=file:/yaml/application.yaml \
+            --spring.config.additional-location=file:/home/ubuntu/poultry-crm-backend/target/application.yaml \
             --server.address=0.0.0.0 \
             --server.port=5678 \
             > "$DEPLOY_PATH/app.log" 2>&1 < /dev/null &
