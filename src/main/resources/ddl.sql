@@ -333,6 +333,8 @@ CREATE INDEX idx_payment_actual_order ON demo.payment USING btree (actual_order_
 CREATE INDEX idx_payment_buying_party ON demo.payment USING btree (buying_party_id);
 CREATE INDEX idx_payment_selling_party ON demo.payment USING btree (selling_party_id);
 CREATE INDEX idx_payment_type_status_date ON demo.payment USING btree (payment_type, status, payment_date);
+ALTER TABLE demo.payment ADD COLUMN trip_id int4 NULL;
+CREATE INDEX idx_payment_trip_id ON demo.payment USING btree (trip_id);
 
 
 -- demo.finance_payment_allocation definition

@@ -122,6 +122,7 @@ public class TripService extends CrudService<Trip> {
             return false;
         }
         partyOrderRelationService.deleteOrdersByTripId(id);
+        paymentService.deleteByTripId(id);
         tripRepository.deleteById(id);
         return true;
     }

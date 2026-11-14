@@ -1,14 +1,17 @@
 package com.example.demo.service;
 
 import com.example.demo.entity.Payment;
+import com.example.demo.repository.FinancePaymentAllocationRepository;
 import com.example.demo.repository.PaymentRepository;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
 class PaymentServiceTest {
@@ -45,6 +48,20 @@ class PaymentServiceTest {
         payment.setSellingPartyId(2);
 
         assertThrows(ResponseStatusException.class, () -> service.create(payment));
+    }
+
+    @Test
+    void deletesAllocationsBeforePaymentsForTrip() {
+        var paymentRepository = mock(PaymentRepository.class);
+        var allocationRepository = mock(FinancePaymentAllocationRepository.class);
+        var service = new PaymentService(
+                paymentRepository, null, null, null, null, allocationRepository, null, null, null, null);
+
+        service.deleteByTripId(7);
+
+        InOrder deletionOrder = inOrder(allocationRepository, paymentRepository);
+        deletionOrder.verify(allocationRepository).deleteByPaymentTripId(7);
+        deletionOrder.verify(paymentRepository).deleteByTripId(7);
     }
 
     private Payment payment() {
