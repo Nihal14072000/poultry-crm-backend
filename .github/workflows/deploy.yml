@@ -96,7 +96,7 @@ jobs:
 
           # Stop only the process listening on the configured application port.
           if command -v fuser >/dev/null 2>&1; then
-            fuser -k 5678/tcp || true
+            fuser -k 1111/tcp || true
           else
             echo "fuser is required on the VM to stop the existing listener safely."
             exit 1
@@ -115,14 +115,14 @@ jobs:
           nohup java -jar "$DEPLOY_PATH/app.jar" \
             --spring.config.additional-location=file:/home/ubuntu/poultry-crm-backend/target/application.yaml \
             --server.address=0.0.0.0 \
-            --server.port=5678 \
+            --server.port=1111 \
             > "$DEPLOY_PATH/app.log" 2>&1 < /dev/null &
 
           echo $! > "$DEPLOY_PATH/app.pid"
 
           for attempt in $(seq 1 30); do
-            if curl --fail --silent http://127.0.0.1:5678/ >/dev/null; then
-              echo "Backend is responding on port 5678."
+            if curl --fail --silent http://127.0.0.1:1111/ >/dev/null; then
+              echo "Backend is responding on port 1111."
               exit 0
             fi
             sleep 2
