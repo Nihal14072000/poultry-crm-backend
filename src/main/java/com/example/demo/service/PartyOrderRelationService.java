@@ -31,7 +31,17 @@ public class PartyOrderRelationService {
     }
 
     @Transactional
+    public void deleteOrdersByTripId(Integer tripId) {
+        orderService.deleteByTripId(tripId);
+    }
+
+    @Transactional
     public void replaceOrders(Integer partyId, List<Order> orders, String partyType) {
+        replaceOrders(partyId, orders, partyType, null);
+    }
+
+    @Transactional
+    public void replaceOrders(Integer partyId, List<Order> orders, String partyType, Integer tripId) {
         if (orders == null) {
             return;
         }
@@ -46,11 +56,7 @@ public class PartyOrderRelationService {
 
         List<PartyOrderRelation> newRelations = new ArrayList<>();
         for (Order requestedOrder : orders) {
-            Order order = requestedOrder.getId() == null
-                    ? orderService.create(requestedOrder)
-                    : orderService.findById(requestedOrder.getId())
-                            .orElseThrow(() -> new IllegalArgumentException(
-                                    "Order not found: " + requestedOrder.getId()));
+            Order order = saveOrderForTrip(requestedOrder, tripId);
             PartyOrderRelation relation = new PartyOrderRelation();
             relation.setPartyId(partyId);
             relation.setOrderId(order.getId());
@@ -65,6 +71,11 @@ public class PartyOrderRelationService {
 
     @Transactional
     public void addOrders(Integer partyId, List<Order> orders, String partyType) {
+        addOrders(partyId, orders, partyType, null);
+    }
+
+    @Transactional
+    public void addOrders(Integer partyId, List<Order> orders, String partyType, Integer tripId) {
         if (orders == null) {
             return;
         }
@@ -76,11 +87,7 @@ public class PartyOrderRelationService {
         LocalDateTime now = LocalDateTime.now();
         List<PartyOrderRelation> newRelations = new ArrayList<>();
         for (Order requestedOrder : orders) {
-            Order order = requestedOrder.getId() == null
-                    ? orderService.create(requestedOrder)
-                    : orderService.findById(requestedOrder.getId())
-                            .orElseThrow(() -> new IllegalArgumentException(
-                                    "Order not found: " + requestedOrder.getId()));
+            Order order = saveOrderForTrip(requestedOrder, tripId);
             if (!activeOrderIds.add(order.getId())) {
                 continue;
             }
@@ -102,6 +109,34 @@ public class PartyOrderRelationService {
     @Transactional(readOnly = true)
     public List<Order> findActiveOrders(Integer partyId, String partyType) {
         return orderService.findActiveByPartyIdAndPartyType(partyId, partyType);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Order> findActiveOrders(Integer tripId, Integer partyId, String partyType) {
+        return orderService.findActiveByTripIdAndPartyIdAndPartyType(tripId, partyId, partyType);
+    }
+
+    private Order saveOrderForTrip(Order requestedOrder, Integer tripId) {
+        if (requestedOrder.getId() == null) {
+            if (tripId != null) {
+                requestedOrder.setTripId(tripId);
+            }
+            return orderService.create(requestedOrder);
+        }
+
+        Order order = orderService.findById(requestedOrder.getId())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Order not found: " + requestedOrder.getId()));
+        if (tripId == null) {
+            return order;
+        }
+        if (order.getTripId() != null && !order.getTripId().equals(tripId)) {
+            throw new IllegalArgumentException(
+                    "Order " + order.getId() + " is already assigned to trip " + order.getTripId());
+        }
+        order.setTripId(tripId);
+        return orderService.update(order.getId(), order)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found: " + order.getId()));
     }
 
     private void deactivate(PartyOrderRelation relation, LocalDateTime now) {
