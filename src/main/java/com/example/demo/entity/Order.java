@@ -20,6 +20,8 @@ public class Order implements ActiveRecord {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+    @Column(name = "trip_id")
+    private Integer tripId;
     @Column(name = "order_type_id")
     private Integer orderTypeId;
     private Integer qty;

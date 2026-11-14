@@ -7,6 +7,7 @@ import com.example.demo.entity.Expenses;
 import com.example.demo.entity.Trip;
 import com.example.demo.entity.BuyingParty;
 import com.example.demo.entity.Order;
+import com.example.demo.entity.TripPartyRelation;
 import com.example.demo.dto.BuyingPartydto;
 import com.example.demo.dto.TripRetrieveResponse;
 import com.example.demo.repository.FinanceOrderSettlementRepository;
@@ -99,7 +100,39 @@ class FinanceServiceTest {
 
         service.createTrip(request);
 
-        verify(partyOrderRelations).addOrders(2, java.util.List.of(order), "B");
-        verify(partyOrderRelations, never()).replaceOrders(2, java.util.List.of(order), "B");
+        verify(partyOrderRelations).addOrders(2, java.util.List.of(order), "B", 7);
+        verify(partyOrderRelations, never()).replaceOrders(2, java.util.List.of(order), "B", 7);
+    }
+
+    @Test
+    void tripRetrieveScopesOrdersToTheRequestedTrip() {
+        var tripRepository = mock(com.example.demo.repository.TripRepository.class);
+        var tripRelations = mock(TripPartyRelationService.class);
+        var buyingPartyService = mock(BuyingPartyService.class);
+        var partyOrderRelations = mock(PartyOrderRelationService.class);
+        var trip = new Trip(); trip.setTripId(7);
+        var relation = new TripPartyRelation(); relation.setTripId(7); relation.setPartyId(2);
+        relation.setPartyType("B");
+        var party = new BuyingParty(); party.setId(2);
+        when(tripRepository.findById(7)).thenReturn(Optional.of(trip));
+        when(tripRelations.findActiveByTripId(7)).thenReturn(java.util.List.of(relation));
+        when(buyingPartyService.findById(2)).thenReturn(Optional.of(party));
+
+        var service = new TripService(
+                tripRepository,
+                mock(VehicleService.class),
+                mock(DriverService.class),
+                mock(SupervisorService.class),
+                mock(EmployeeService.class),
+                buyingPartyService,
+                mock(SellingPartyService.class),
+                tripRelations,
+                partyOrderRelations,
+                mock(PaymentService.class),
+                mock(ExpensesService.class));
+
+        service.retrieve(7);
+
+        verify(partyOrderRelations).findActiveOrders(7, 2, "B");
     }
 }
