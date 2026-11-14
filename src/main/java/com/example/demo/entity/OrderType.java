@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @Table(name = "order_type", schema = "demo")
 @Data
 @NoArgsConstructor
-public class OrderType implements ActiveRecord {
+public class OrderType implements ActiveRecord, TimestampedRecord {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;

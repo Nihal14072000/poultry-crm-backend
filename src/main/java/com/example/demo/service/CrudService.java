@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import com.example.demo.entity.ActiveRecord;
 import com.example.demo.entity.CreatedRecord;
+import com.example.demo.entity.TimestampedRecord;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,15 +43,22 @@ public class CrudService<T extends CreatedRecord> {
 
     @Transactional
     public T create(T entity) {
+        if (entity instanceof TimestampedRecord record) {
+            AuditSupport.markCreated(record);
+        }
         return repository.save(entity);
     }
 
     @Transactional
     public Optional<T> update(Integer id, T entity) {
-        if (!repository.existsById(id)) {
+        Optional<T> existing = repository.findById(id);
+        if (existing.isEmpty()) {
             return Optional.empty();
         }
         idSetter.accept(entity, id);
+        if (entity instanceof TimestampedRecord record && existing.get() instanceof TimestampedRecord existingRecord) {
+            AuditSupport.markUpdated(record, existingRecord);
+        }
         return Optional.of(repository.save(entity));
     }
 

@@ -49,6 +49,7 @@ public abstract class TypedEmployeeService extends CrudService<Employee> {
         String username = accountProvisioner.validateNameForAccount(employee.getName());
         employee.setName(username);
         employee.setType(employeeType);
+        AuditSupport.markCreated(employee);
         Employee savedEmployee = repository.save(employee);
         accountProvisioner.createAccount(savedEmployee, username);
         return savedEmployee;
@@ -62,6 +63,8 @@ public abstract class TypedEmployeeService extends CrudService<Employee> {
         }
         employee.setId(id);
         employee.setType(employeeType);
+        Employee existing = repository.findById(id).orElseThrow();
+        AuditSupport.markUpdated(employee, existing);
         return Optional.of(repository.save(employee));
     }
 

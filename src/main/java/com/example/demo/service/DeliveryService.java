@@ -98,10 +98,14 @@ public class DeliveryService extends CrudService<Delivery> {
         delivery.setStatus(request.getStatus());
         delivery.setIsActive(request.getIsActive());
         delivery.setIsDeleted(request.getIsDeleted());
-        delivery.setCreateDate(request.getCreateDate());
-        delivery.setUpdatedDate(request.getUpdatedDate());
-        delivery.setCreatedBy(request.getCreatedBy());
-        delivery.setUpdatedBy(request.getUpdatedBy());
+        Delivery existingDelivery = delivery.getId() == null
+                ? null
+                : deliveryRepository.findById(delivery.getId()).orElse(null);
+        if (existingDelivery == null) {
+            AuditSupport.markCreated(delivery);
+        } else {
+            AuditSupport.markUpdated(delivery, existingDelivery);
+        }
         Delivery savedDelivery = deliveryRepository.save(delivery);
 
         if (request.getVendorDeliveries() != null) {
@@ -142,11 +146,8 @@ public class DeliveryService extends CrudService<Delivery> {
         vendorDelivery.setNote(request.getNote());
         vendorDelivery.setIsActive(request.getIsActive());
         vendorDelivery.setIsDeleted(request.getIsDeleted());
-        vendorDelivery.setCreateDate(request.getCreateDate());
-        vendorDelivery.setUpdatedDate(request.getUpdatedDate());
-        vendorDelivery.setCreatedBy(request.getCreatedBy());
-        vendorDelivery.setUpdatedBy(request.getUpdatedBy());
-        VendorDelivery savedVendorDelivery = vendorDeliveryService.create(vendorDelivery);
+        VendorDelivery savedVendorDelivery = vendorDeliveryService.update(request.getId(), vendorDelivery)
+                .orElseGet(() -> vendorDeliveryService.create(vendorDelivery));
 
         partyOrderRelationService.replaceOrders(
                 savedVendorDelivery.getId(),
@@ -160,9 +161,8 @@ public class DeliveryService extends CrudService<Delivery> {
         relation.setPartyType(PartyOrderRelationService.VENDOR_DELIVERY_PARTY_TYPE);
         relation.setIsActive(true);
         relation.setIsDeleted(false);
-        relation.setCreateDate(request.getCreateDate());
-        relation.setCreatedBy(request.getCreatedBy());
-        deliveryPartyRelationService.create(relation);
+        deliveryPartyRelationService.update(request.getRelationId(), relation)
+                .orElseGet(() -> deliveryPartyRelationService.create(relation));
     }
 
     private Integer saveSellingParty(SellingParty partyRequest) {

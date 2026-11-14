@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @Table(name = "employee", schema = "demo")
 @Data
 @NoArgsConstructor
-public class Employee implements ActiveRecord {
+public class Employee implements ActiveRecord, AuditableRecord {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;

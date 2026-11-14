@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Table(name = "trip_party_relation", schema = "demo")
 @Data
 @NoArgsConstructor
-public class TripPartyRelation implements ActiveRecord {
+public class TripPartyRelation implements ActiveRecord, AuditableRecord {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "relation_id")

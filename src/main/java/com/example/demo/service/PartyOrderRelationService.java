@@ -6,7 +6,6 @@ import com.example.demo.repository.PartyOrderRelationRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -46,12 +45,11 @@ public class PartyOrderRelationService {
             return;
         }
 
-        LocalDateTime now = LocalDateTime.now();
         List<PartyOrderRelation> existingRelations =
                 repository.findByPartyIdAndPartyType(partyId, partyType);
         existingRelations.stream()
                 .filter(this::isActive)
-                .forEach(relation -> deactivate(relation, now));
+                .forEach(this::deactivate);
         repository.saveAll(existingRelations);
 
         List<PartyOrderRelation> newRelations = new ArrayList<>();
@@ -63,7 +61,7 @@ public class PartyOrderRelationService {
             relation.setPartyType(partyType);
             relation.setIsActive(true);
             relation.setIsDeleted(false);
-            relation.setCreateDate(now);
+            AuditSupport.markCreated(relation);
             newRelations.add(relation);
         }
         repository.saveAll(newRelations);
@@ -84,7 +82,6 @@ public class PartyOrderRelationService {
                 .filter(this::isActive)
                 .map(PartyOrderRelation::getOrderId)
                 .collect(Collectors.toSet());
-        LocalDateTime now = LocalDateTime.now();
         List<PartyOrderRelation> newRelations = new ArrayList<>();
         for (Order requestedOrder : orders) {
             Order order = saveOrderForTrip(requestedOrder, tripId);
@@ -98,7 +95,7 @@ public class PartyOrderRelationService {
             relation.setPartyType(partyType);
             relation.setIsActive(true);
             relation.setIsDeleted(false);
-            relation.setCreateDate(now);
+            AuditSupport.markCreated(relation);
             newRelations.add(relation);
         }
         if (!newRelations.isEmpty()) {
@@ -139,10 +136,10 @@ public class PartyOrderRelationService {
                 .orElseThrow(() -> new IllegalArgumentException("Order not found: " + order.getId()));
     }
 
-    private void deactivate(PartyOrderRelation relation, LocalDateTime now) {
+    private void deactivate(PartyOrderRelation relation) {
         relation.setIsActive(false);
         relation.setIsDeleted(true);
-        relation.setUpdatedDate(now);
+        AuditSupport.markUpdated(relation, relation);
     }
 
     private boolean isActive(PartyOrderRelation relation) {

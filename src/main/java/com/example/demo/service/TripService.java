@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.time.LocalDateTime;
 
 @Service
 public class TripService extends CrudService<Trip> {
@@ -93,7 +92,9 @@ public class TripService extends CrudService<Trip> {
 
     @Transactional
     public TripRetrieveResponse createTrip(TripRetrieveResponse request) {
-        Trip trip = tripRepository.save(toTrip(request));
+        Trip trip = toTrip(request);
+        AuditSupport.markCreated(trip);
+        trip = tripRepository.save(trip);
         saveParties(trip.getTripId(), request, false);
         saveFinanceDetails(trip.getTripId(), request);
         return toResponse(trip);
@@ -108,6 +109,7 @@ public class TripService extends CrudService<Trip> {
 
         Trip trip = toTrip(request);
         trip.setTripId(tripId);
+        AuditSupport.markUpdated(trip, existingTrip);
         Trip savedTrip = tripRepository.save(trip);
         saveParties(tripId, request, true);
         return Optional.of(toResponse(savedTrip));
@@ -143,10 +145,6 @@ public class TripService extends CrudService<Trip> {
         trip.setPickupId(request.getPickupId());
         trip.setDropId(request.getDropId());
         trip.setStatus(request.getStatus());
-        trip.setCreateDate(request.getCreateDate());
-        trip.setUpdatedDate(request.getUpdatedDate());
-        trip.setCreatedBy(request.getCreatedBy());
-        trip.setUpdatedBy(request.getUpdatedBy());
         return trip;
     }
 
@@ -199,7 +197,6 @@ public class TripService extends CrudService<Trip> {
                 throw new IllegalArgumentException("Each expense needs a positive amount and date");
             expense.setId(null);
             expense.setTripId(tripId);
-            if (expense.getCreateDate() == null) expense.setCreateDate(LocalDateTime.now());
             expensesService.create(expense);
         }
     }
@@ -211,11 +208,6 @@ public class TripService extends CrudService<Trip> {
         party.setLocation(request.getLocation());
         party.setIsActive(request.getIsActive());
         party.setIsDeleted(request.getIsDeleted());
-        party.setCreateDate(request.getCreateDate());
-        party.setUpdatedDate(request.getUpdatedDate());
-        party.setCreatedBy(request.getCreatedBy());
-        party.setUpdatedBy(request.getUpdatedBy());
-
         if (request.getId() == null) {
             return buyingPartyService.create(party);
         }
@@ -231,11 +223,6 @@ public class TripService extends CrudService<Trip> {
         party.setLocation(request.getLocation());
         party.setIsActive(request.getIsActive());
         party.setIsDeleted(request.getIsDeleted());
-        party.setCreateDate(request.getCreateDate());
-        party.setUpdatedDate(request.getUpdatedDate());
-        party.setCreatedBy(request.getCreatedBy());
-        party.setUpdatedBy(request.getUpdatedBy());
-
         if (request.getId() == null) {
             return sellingPartyService.create(party);
         }
