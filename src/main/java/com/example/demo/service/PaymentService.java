@@ -200,7 +200,7 @@ public class PaymentService extends CrudService<Payment> {
     @Transactional
     public Payment create(Payment payment) {
         validate(payment);
-        if (payment.getCreateDate() == null) payment.setCreateDate(java.time.LocalDateTime.now());
+        AuditSupport.markCreated(payment);
         if (payment.getStatus() == null) payment.setStatus("PENDING");
         return repository.save(payment);
     }
@@ -211,7 +211,8 @@ public class PaymentService extends CrudService<Payment> {
         if (!repository.existsById(id)) return java.util.Optional.empty();
         validate(payment);
         payment.setId(id);
-        payment.setUpdatedDate(java.time.LocalDateTime.now());
+        Payment existing = repository.findById(id).orElseThrow();
+        AuditSupport.markUpdated(payment, existing);
         return java.util.Optional.of(repository.save(payment));
     }
 

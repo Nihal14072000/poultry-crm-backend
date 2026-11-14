@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Table(name = "delievery", schema = "demo")
 @Data
 @NoArgsConstructor
-public class Delivery implements ActiveRecord {
+public class Delivery implements ActiveRecord, AuditableRecord {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;

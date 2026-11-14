@@ -7,7 +7,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,16 +23,15 @@ public class TripPartyRelationService {
 
     @Transactional
     public void replaceParties(Integer tripId, List<Integer> buyingPartyIds, List<Integer> sellingPartyIds) {
-        LocalDateTime now = LocalDateTime.now();
         List<TripPartyRelation> existingRelations = repository.findByTripId(tripId);
         existingRelations.stream()
                 .filter(this::isActive)
-                .forEach(relation -> deactivate(relation, now));
+                .forEach(this::deactivate);
         repository.saveAll(existingRelations);
 
         List<TripPartyRelation> newRelations = new ArrayList<>();
-        addRelations(newRelations, tripId, buyingPartyIds, BUYING_PARTY_TYPE, now);
-        addRelations(newRelations, tripId, sellingPartyIds, SELLING_PARTY_TYPE, now);
+        addRelations(newRelations, tripId, buyingPartyIds, BUYING_PARTY_TYPE);
+        addRelations(newRelations, tripId, sellingPartyIds, SELLING_PARTY_TYPE);
         repository.saveAll(newRelations);
     }
 
@@ -48,8 +46,7 @@ public class TripPartyRelationService {
             List<TripPartyRelation> relations,
             Integer tripId,
             List<Integer> partyIds,
-            String partyType,
-            LocalDateTime now
+            String partyType
     ) {
         if (partyIds == null) {
             return;
@@ -62,15 +59,15 @@ public class TripPartyRelationService {
             relation.setPartyType(partyType);
             relation.setIsActive(true);
             relation.setIsDeleted(false);
-            relation.setCreateDate(now);
+            AuditSupport.markCreated(relation);
             relations.add(relation);
         }
     }
 
-    private void deactivate(TripPartyRelation relation, LocalDateTime now) {
+    private void deactivate(TripPartyRelation relation) {
         relation.setIsActive(false);
         relation.setIsDeleted(true);
-        relation.setUpdatedDate(now);
+        AuditSupport.markUpdated(relation, relation);
     }
 
     private boolean isActive(TripPartyRelation relation) {
