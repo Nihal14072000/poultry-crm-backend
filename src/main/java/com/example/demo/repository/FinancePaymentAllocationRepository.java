@@ -2,6 +2,7 @@ package com.example.demo.repository;
 
 import com.example.demo.entity.FinancePaymentAllocation;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.math.BigDecimal;
@@ -9,6 +10,13 @@ import java.util.List;
 
 public interface FinancePaymentAllocationRepository extends JpaRepository<FinancePaymentAllocation, Integer> {
     List<FinancePaymentAllocation> findByPaymentId(Integer paymentId);
+
+    @Modifying
+    @Query("""
+            delete from FinancePaymentAllocation a
+            where a.paymentId in (select p.id from Payment p where p.tripId = :tripId)
+            """)
+    void deleteByPaymentTripId(@Param("tripId") Integer tripId);
 
     @Query("select coalesce(sum(a.allocatedAmount), 0) from FinancePaymentAllocation a where a.paymentId = :paymentId")
     BigDecimal sumAllocatedForPayment(@Param("paymentId") Integer paymentId);

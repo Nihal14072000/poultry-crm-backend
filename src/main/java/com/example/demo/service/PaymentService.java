@@ -216,6 +216,12 @@ public class PaymentService extends CrudService<Payment> {
         return java.util.Optional.of(repository.save(payment));
     }
 
+    @Transactional
+    public void deleteByTripId(Integer tripId) {
+        allocationRepository.deleteByPaymentTripId(tripId);
+        repository.deleteByTripId(tripId);
+    }
+
     private void validate(Payment payment) {
         boolean hasBuyingParty = payment.getBuyingPartyId() != null;
         boolean hasSellingParty = payment.getSellingPartyId() != null;

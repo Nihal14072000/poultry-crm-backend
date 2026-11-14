@@ -14,35 +14,40 @@ import static org.mockito.Mockito.when;
 
 class TripServiceTest {
     @Test
-    void deleteRemovesTripOrdersBeforeTrip() {
+    void deleteRemovesTripOrdersAndPaymentsBeforeTrip() {
         TripRepository tripRepository = mock(TripRepository.class);
         PartyOrderRelationService partyOrderRelationService = mock(PartyOrderRelationService.class);
-        TripService service = createService(tripRepository, partyOrderRelationService);
+        PaymentService paymentService = mock(PaymentService.class);
+        TripService service = createService(tripRepository, partyOrderRelationService, paymentService);
         when(tripRepository.existsById(7)).thenReturn(true);
 
         assertTrue(service.delete(7));
 
-        InOrder deletionOrder = inOrder(partyOrderRelationService, tripRepository);
+        InOrder deletionOrder = inOrder(partyOrderRelationService, paymentService, tripRepository);
         deletionOrder.verify(partyOrderRelationService).deleteOrdersByTripId(7);
+        deletionOrder.verify(paymentService).deleteByTripId(7);
         deletionOrder.verify(tripRepository).deleteById(7);
     }
 
     @Test
-    void deleteDoesNotRemoveOrdersWhenTripDoesNotExist() {
+    void deleteDoesNotRemoveRelatedRecordsWhenTripDoesNotExist() {
         TripRepository tripRepository = mock(TripRepository.class);
         PartyOrderRelationService partyOrderRelationService = mock(PartyOrderRelationService.class);
-        TripService service = createService(tripRepository, partyOrderRelationService);
+        PaymentService paymentService = mock(PaymentService.class);
+        TripService service = createService(tripRepository, partyOrderRelationService, paymentService);
         when(tripRepository.existsById(7)).thenReturn(false);
 
         assertFalse(service.delete(7));
 
         verify(partyOrderRelationService, never()).deleteOrdersByTripId(7);
+        verify(paymentService, never()).deleteByTripId(7);
         verify(tripRepository, never()).deleteById(7);
     }
 
     private TripService createService(
             TripRepository tripRepository,
-            PartyOrderRelationService partyOrderRelationService
+            PartyOrderRelationService partyOrderRelationService,
+            PaymentService paymentService
     ) {
         return new TripService(
                 tripRepository,
@@ -54,7 +59,7 @@ class TripServiceTest {
                 mock(SellingPartyService.class),
                 mock(TripPartyRelationService.class),
                 partyOrderRelationService,
-                mock(PaymentService.class),
+                paymentService,
                 mock(ExpensesService.class));
     }
 }
