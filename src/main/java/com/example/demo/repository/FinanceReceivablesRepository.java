@@ -21,7 +21,6 @@ public class FinanceReceivablesRepository {
                                 and (cast(:buyingPartyId as integer) is null or p.buying_party_id = :buyingPartyId)), 0) as total_received,
                     coalesce((select sum(coalesce(o.weight, 0) * coalesce(o.rate, 0))
                               from demo."order" o
-                              join demo.trip t on t.trip_id = o.trip_id
                               where o.isactive is true
                                 and o.isdeleted is not true
                                 and exists (
@@ -40,7 +39,6 @@ public class FinanceReceivablesRepository {
                                 and (cast(:sellingPartyId as integer) is null or p.selling_party_id = :sellingPartyId)), 0) as total_paid,
                     coalesce((select sum(coalesce(o.weight, 0) * coalesce(o.rate, 0))
                               from demo."order" o
-                              join demo.trip t on t.trip_id = o.trip_id
                               where o.isactive is true
                                 and o.isdeleted is not true
                                 and exists (
