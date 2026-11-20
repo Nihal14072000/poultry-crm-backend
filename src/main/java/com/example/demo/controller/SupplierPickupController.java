@@ -1,8 +1,9 @@
 package com.example.demo.controller;
 
-import com.example.demo.entity.SupplierPickup;
-import com.example.demo.entity.Order;
 import com.example.demo.dto.SupplierPickupRetrieveResponse;
+import com.example.demo.dto.SupplierPickupWriteRequest;
+import com.example.demo.entity.Order;
+import com.example.demo.entity.SupplierPickup;
 import com.example.demo.service.PartyOrderRelationService;
 import com.example.demo.service.SupplierPickupService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -49,19 +50,21 @@ public class SupplierPickupController {
             description = "Returns the supplier pickup with its buying party, actual order, and related orders. Returns 404 if it does not exist."
     )
     public ResponseEntity<SupplierPickupRetrieveResponse> retrieve(@PathVariable Integer id) {
-        return service.retrieve(id)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+        return service.retrieve(id).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<SupplierPickupRetrieveResponse> create(@RequestBody SupplierPickup pickup) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.createAndRetrieve(pickup));
+    public ResponseEntity<SupplierPickupRetrieveResponse> create(@RequestBody SupplierPickupWriteRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.createAndRetrieve(toEntity(request)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<SupplierPickup> update(@PathVariable Integer id, @RequestBody SupplierPickup pickup) {
-        return service.update(id, pickup).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<SupplierPickup> update(
+            @PathVariable Integer id,
+            @RequestBody SupplierPickupWriteRequest request
+    ) {
+        return service.update(id, toEntity(request)).map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
@@ -90,5 +93,13 @@ public class SupplierPickupController {
                 id, orders, PartyOrderRelationService.SUPPLIER_PICKUP_PARTY_TYPE);
         return ResponseEntity.ok(partyOrderRelationService.findActiveOrders(
                 id, PartyOrderRelationService.SUPPLIER_PICKUP_PARTY_TYPE));
+    }
+
+    private SupplierPickup toEntity(SupplierPickupWriteRequest request) {
+        SupplierPickup pickup = new SupplierPickup();
+        pickup.setBuyingPartyId(request.getBuyingPartyId());
+        pickup.setActualOrderId(request.getActualOrderId());
+        pickup.setNote(request.getNote());
+        return pickup;
     }
 }

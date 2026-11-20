@@ -127,10 +127,14 @@ public class PartyOrderRelationService {
 
     private Order saveOrderForTrip(Order requestedOrder, Integer tripId) {
         if (requestedOrder.getId() == null) {
-            if (tripId != null) {
-                requestedOrder.setTripId(tripId);
-            }
-            return orderService.create(requestedOrder);
+            Order order = new Order();
+            order.setTripId(tripId != null ? tripId : requestedOrder.getTripId());
+            order.setOrderTypeId(requestedOrder.getOrderTypeId());
+            order.setQty(requestedOrder.getQty());
+            order.setWeight(requestedOrder.getWeight());
+            order.setRate(requestedOrder.getRate());
+            order.setTotal(requestedOrder.getTotal());
+            return orderService.create(order);
         }
 
         Order order = orderService.findById(requestedOrder.getId())

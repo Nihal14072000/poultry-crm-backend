@@ -21,18 +21,30 @@ public class TripPartyRelationService {
         this.repository = repository;
     }
 
+    /**
+     * Replaces only the relationship types explicitly supplied by the caller.
+     * A null list means "leave unchanged"; an empty list means "clear all".
+     */
     @Transactional
     public void replaceParties(Integer tripId, List<Integer> buyingPartyIds, List<Integer> sellingPartyIds) {
+        if (buyingPartyIds == null && sellingPartyIds == null) {
+            return;
+        }
         List<TripPartyRelation> existingRelations = repository.findByTripId(tripId);
         existingRelations.stream()
                 .filter(this::isActive)
+                .filter(relation -> BUYING_PARTY_TYPE.equals(relation.getPartyType())
+                        ? buyingPartyIds != null
+                        : SELLING_PARTY_TYPE.equals(relation.getPartyType()) && sellingPartyIds != null)
                 .forEach(this::deactivate);
         repository.saveAll(existingRelations);
 
         List<TripPartyRelation> newRelations = new ArrayList<>();
         addRelations(newRelations, tripId, buyingPartyIds, BUYING_PARTY_TYPE);
         addRelations(newRelations, tripId, sellingPartyIds, SELLING_PARTY_TYPE);
-        repository.saveAll(newRelations);
+        if (!newRelations.isEmpty()) {
+            repository.saveAll(newRelations);
+        }
     }
 
     @Transactional(readOnly = true)
@@ -42,16 +54,11 @@ public class TripPartyRelationService {
                 .toList();
     }
 
-    private void addRelations(
-            List<TripPartyRelation> relations,
-            Integer tripId,
-            List<Integer> partyIds,
-            String partyType
-    ) {
+    private void addRelations(List<TripPartyRelation> relations, Integer tripId,
+                              List<Integer> partyIds, String partyType) {
         if (partyIds == null) {
             return;
         }
-
         for (Integer partyId : partyIds) {
             TripPartyRelation relation = new TripPartyRelation();
             relation.setTripId(tripId);
