@@ -116,12 +116,14 @@ jobs:
             --spring.config.additional-location=file:/home/ubuntu/poultry-crm-backend/target/application.yaml \
             --server.address=0.0.0.0 \
             --server.port=1111 \
+            --management.endpoints.web.exposure.include=health \
+            --management.endpoint.health.show-details=never \
             > "$DEPLOY_PATH/app.log" 2>&1 < /dev/null &
 
           echo $! > "$DEPLOY_PATH/app.pid"
 
           for attempt in $(seq 1 30); do
-            if curl --fail --silent http://127.0.0.1:1111/ >/dev/null; then
+            if curl --fail --silent http://127.0.0.1:1111/actuator/health >/dev/null; then
               echo "Backend is responding on port 1111."
               exit 0
             fi
