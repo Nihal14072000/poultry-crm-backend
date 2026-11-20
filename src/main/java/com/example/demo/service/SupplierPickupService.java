@@ -56,8 +56,6 @@ public class SupplierPickupService extends CrudService<SupplierPickup> {
         SupplierPickup current = existing.get();
         pickup.setIsActive(current.getIsActive());
         pickup.setIsDeleted(current.getIsDeleted());
-        AuditSupport.markUpdated(pickup, current);
-        pickup.setId(id);
         return super.update(id, pickup);
     }
 
