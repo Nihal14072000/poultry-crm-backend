@@ -35,6 +35,11 @@ public class PaymentController {
         return service.retrieveAll();
     }
 
+    @GetMapping("/trip/{tripId}/retrieve")
+    public List<PaymentRetrieveResponse> retrieveByTripId(@PathVariable Integer tripId) {
+        return service.retrieveByTripId(tripId);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Payment> findById(@PathVariable Integer id) {
         return service.findById(id).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());

@@ -2,6 +2,8 @@ package com.example.demo.service;
 
 import com.example.demo.dto.DeliveryRetrieveResponse;
 import com.example.demo.dto.VendorDeliveryRetrieveResponse;
+import com.example.demo.entity.ActiveRecord;
+import com.example.demo.entity.CreatedRecord;
 import com.example.demo.entity.Delivery;
 import com.example.demo.entity.DeliveryPartyRelation;
 import com.example.demo.entity.Expenses;
@@ -12,6 +14,8 @@ import com.example.demo.entity.SupplierPickup;
 import com.example.demo.entity.Trip;
 import com.example.demo.entity.VendorDelivery;
 import com.example.demo.repository.DeliveryRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +25,7 @@ import java.util.Optional;
 
 @Service
 public class DeliveryService extends CrudService<Delivery> {
+    private static final Logger log = LoggerFactory.getLogger(DeliveryService.class);
     private final DeliveryRepository deliveryRepository;
     private final TripService tripService;
     private final DeliveryPartyRelationService deliveryPartyRelationService;
@@ -61,6 +66,15 @@ public class DeliveryService extends CrudService<Delivery> {
     public Optional<DeliveryRetrieveResponse> retrieve(Integer deliveryId) {
         return findById(deliveryId)
                 .map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public List<DeliveryRetrieveResponse> retrieveByTripId(Integer tripId) {
+        List<Delivery> deliveries = CreatedRecord.newestFirst(deliveryRepository.findByTripId(tripId).stream()
+                .filter(ActiveRecord::isActiveRecord)
+                .toList());
+        log.info("Retrieved {} active deliveries for tripId={}", deliveries.size(), tripId);
+        return deliveries.stream().map(this::toResponse).toList();
     }
 
     @Transactional
