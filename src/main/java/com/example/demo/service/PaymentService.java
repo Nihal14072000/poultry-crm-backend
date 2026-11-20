@@ -220,6 +220,9 @@ public class PaymentService extends CrudService<Payment> {
         validate(payment);
         payment.setId(id);
         Payment existing = repository.findById(id).orElseThrow();
+        // These fields are server-managed and must survive an ordinary payment update.
+        payment.setIsActive(existing.getIsActive());
+        payment.setIsDeleted(existing.getIsDeleted());
         AuditSupport.markUpdated(payment, existing);
         return java.util.Optional.of(repository.save(payment));
     }

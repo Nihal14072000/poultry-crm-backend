@@ -46,6 +46,19 @@ public class SupplierPickupService extends CrudService<SupplierPickup> {
         return toResponse(super.create(pickup));
     }
 
+    @Override
+    @Transactional
+    public Optional<SupplierPickup> update(Integer id, SupplierPickup pickup) {
+        Optional<SupplierPickup> existing = super.findById(id);
+        if (existing.isEmpty()) {
+            return Optional.empty();
+        }
+        SupplierPickup current = existing.get();
+        pickup.setIsActive(current.getIsActive());
+        pickup.setIsDeleted(current.getIsDeleted());
+        return super.update(id, pickup);
+    }
+
     private SupplierPickupRetrieveResponse toResponse(SupplierPickup pickup) {
         BuyingParty buyingParty = pickup.getBuyingPartyId() == null
                 ? null

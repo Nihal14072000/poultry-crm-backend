@@ -1,6 +1,8 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.FinanceSummaryResponse;
+import com.example.demo.dto.FinanceSettlementWriteRequest;
+import com.example.demo.dto.FinanceAllocationWriteRequest;
 import com.example.demo.entity.FinanceOrderSettlement;
 import com.example.demo.entity.FinancePaymentAllocation;
 import com.example.demo.service.FinanceService;
@@ -23,12 +25,30 @@ public class FinanceController {
     public List<FinanceOrderSettlement> tripSettlements(@PathVariable Integer tripId) { return service.tripSettlements(tripId); }
 
     @PostMapping("/settlements")
-    public ResponseEntity<FinanceOrderSettlement> createSettlement(@RequestBody FinanceOrderSettlement settlement) {
+    public ResponseEntity<FinanceOrderSettlement> createSettlement(@RequestBody FinanceSettlementWriteRequest request) {
+        FinanceOrderSettlement settlement = new FinanceOrderSettlement();
+        settlement.setTripId(request.getTripId());
+        settlement.setOrderId(request.getOrderId());
+        settlement.setBuyingPartyId(request.getBuyingPartyId());
+        settlement.setSellingPartyId(request.getSellingPartyId());
+        settlement.setSettlementDate(request.getSettlementDate());
+        settlement.setDueDate(request.getDueDate());
+        settlement.setCurrencyCode(request.getCurrencyCode());
+        settlement.setOrderAmount(request.getOrderAmount());
+        settlement.setBrokerageAmount(request.getBrokerageAmount());
+        settlement.setBrokeragePayer(request.getBrokeragePayer());
+        settlement.setNotes(request.getNotes());
         return ResponseEntity.status(HttpStatus.CREATED).body(service.createSettlement(settlement));
     }
 
     @PostMapping("/allocations")
-    public ResponseEntity<FinancePaymentAllocation> allocate(@RequestBody FinancePaymentAllocation allocation) {
+    public ResponseEntity<FinancePaymentAllocation> allocate(@RequestBody FinanceAllocationWriteRequest request) {
+        FinancePaymentAllocation allocation = new FinancePaymentAllocation();
+        allocation.setPaymentId(request.getPaymentId());
+        allocation.setSettlementId(request.getSettlementId());
+        allocation.setAllocatedAmount(request.getAllocatedAmount());
+        allocation.setAllocationDate(request.getAllocationDate());
+        allocation.setNote(request.getNote());
         return ResponseEntity.status(HttpStatus.CREATED).body(service.allocate(allocation));
     }
 

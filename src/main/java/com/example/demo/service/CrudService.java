@@ -43,6 +43,9 @@ public class CrudService<T extends CreatedRecord> {
 
     @Transactional
     public T create(T entity) {
+        // All CRUD-managed entities use generated identifiers. Never allow a
+        // request body to turn a create operation into an update of an existing row.
+        idSetter.accept(entity, null);
         if (entity instanceof TimestampedRecord record) {
             AuditSupport.markCreated(record);
         }
@@ -56,6 +59,10 @@ public class CrudService<T extends CreatedRecord> {
             return Optional.empty();
         }
         idSetter.accept(entity, id);
+        if (entity instanceof ActiveRecord record && existing.get() instanceof ActiveRecord existingRecord) {
+            record.setIsActive(existingRecord.getIsActive());
+            record.setIsDeleted(existingRecord.getIsDeleted());
+        }
         if (entity instanceof TimestampedRecord record && existing.get() instanceof TimestampedRecord existingRecord) {
             AuditSupport.markUpdated(record, existingRecord);
         }
