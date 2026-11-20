@@ -99,6 +99,14 @@ public class TripController {
         // replace the corresponding relationships.
         TripRetrieveResponse merged = objectMapper.readerForUpdating(current)
                 .readValue(request.traverse(objectMapper));
+        // Preserve the distinction between an omitted list and an explicitly
+        // supplied empty list so untouched relationships are not rewritten.
+        if (!request.has("buyingParties")) {
+            merged.setBuyingParties(null);
+        }
+        if (!request.has("sellingParties")) {
+            merged.setSellingParties(null);
+        }
         return service.updateTrip(id, merged).map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
