@@ -29,6 +29,11 @@ public class MortalityController {
         return service.findAll();
     }
 
+    @GetMapping("/trip/{tripId}")
+    public List<Mortality> findByTripId(@PathVariable Integer tripId) {
+        return service.findByTripId(tripId);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Mortality> findById(@PathVariable Integer id) {
         return service.findById(id).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
