@@ -31,6 +31,11 @@ public class DeliveryController {
         return service.findAll();
     }
 
+    @GetMapping("/trip/{tripId}/retrieve")
+    public List<DeliveryRetrieveResponse> retrieveByTripId(@PathVariable Integer tripId) {
+        return service.retrieveByTripId(tripId);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Delivery> findById(@PathVariable Integer id) {
         return service.findById(id).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());

@@ -6,6 +6,7 @@ import com.example.demo.dto.SellingPartydto;
 import com.example.demo.dto.TripRetrieveResponse;
 import com.example.demo.entity.BuyingParty;
 import com.example.demo.entity.ActiveRecord;
+import com.example.demo.entity.CreatedRecord;
 import com.example.demo.entity.Employee;
 import com.example.demo.entity.Order;
 import com.example.demo.entity.Payment;
@@ -19,6 +20,8 @@ import com.example.demo.repository.PaymentRepository;
 import com.example.demo.repository.SellingPartyRepository;
 import com.example.demo.repository.TripRepository;
 import com.example.demo.repository.VehicleRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +34,7 @@ import java.util.Optional;
 @Slf4j
 @Service
 public class PaymentService extends CrudService<Payment> {
+    private static final Logger log = LoggerFactory.getLogger(PaymentService.class);
     private final PaymentRepository repository;
     private final BuyingPartyRepository buyingPartyRepository;
     private final OrderRepository orderRepository;
@@ -72,6 +76,15 @@ public class PaymentService extends CrudService<Payment> {
         return findAll().stream()
                 .map(this::toRetrieveResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<PaymentRetrieveResponse> retrieveByTripId(Integer tripId) {
+        List<Payment> payments = CreatedRecord.newestFirst(repository.findByTripId(tripId).stream()
+                .filter(ActiveRecord::isActiveRecord)
+                .toList());
+        log.info("Retrieved {} active payments for tripId={}", payments.size(), tripId);
+        return payments.stream().map(this::toRetrieveResponse).toList();
     }
 
     @Transactional(readOnly = true)
@@ -125,11 +138,6 @@ public class PaymentService extends CrudService<Payment> {
         var relations = tripPartyRelationService.findActiveByTripId(trip.getTripId());
         return TripRetrieveResponse.builder()
                 .tripId(trip.getTripId())
-                //.vehicle(trip.getVehicleId() == null
-                 //       ? null
-                //: vehicleRepository.findById(trip.getVehicleId()).orElse(null))
-                //.driver(findEmployee(trip.getDriverId()))
-                //.supervisor(findEmployee(trip.getSupervisorId()))
                 .buyingParties(relations.stream()
                         .filter(relation -> "B".equals(relation.getPartyType()))
                         .map(relation -> buyingPartyRepository.findById(relation.getPartyId())

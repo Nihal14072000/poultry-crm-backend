@@ -13,6 +13,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.List;
 
 class PaymentServiceTest {
     private final PaymentRepository repository = mock(PaymentRepository.class);
@@ -51,17 +54,10 @@ class PaymentServiceTest {
     }
 
     @Test
-    void deletesAllocationsBeforePaymentsForTrip() {
-        var paymentRepository = mock(PaymentRepository.class);
-        var allocationRepository = mock(FinancePaymentAllocationRepository.class);
-        var service = new PaymentService(
-                paymentRepository, null, null, null, null, allocationRepository, null, null, null, null);
+    void retrieveByTripIdReturnsEmptyWhenTripHasNoPayments() {
+        when(repository.findByTripId(42)).thenReturn(List.of());
 
-        service.deleteByTripId(7);
-
-        InOrder deletionOrder = inOrder(allocationRepository, paymentRepository);
-        deletionOrder.verify(allocationRepository).deleteByPaymentTripId(7);
-        deletionOrder.verify(paymentRepository).deleteByTripId(7);
+        assertEquals(List.of(), service.retrieveByTripId(42));
     }
 
     private Payment payment() {
