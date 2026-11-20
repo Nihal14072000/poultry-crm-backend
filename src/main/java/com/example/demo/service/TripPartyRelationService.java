@@ -27,6 +27,9 @@ public class TripPartyRelationService {
      */
     @Transactional
     public void replaceParties(Integer tripId, List<Integer> buyingPartyIds, List<Integer> sellingPartyIds) {
+        if (buyingPartyIds == null && sellingPartyIds == null) {
+            return;
+        }
         List<TripPartyRelation> existingRelations = repository.findByTripId(tripId);
         existingRelations.stream()
                 .filter(this::isActive)
