@@ -59,6 +59,10 @@ public class CrudService<T extends CreatedRecord> {
             return Optional.empty();
         }
         idSetter.accept(entity, id);
+        if (entity instanceof ActiveRecord record && existing.get() instanceof ActiveRecord existingRecord) {
+            record.setIsActive(existingRecord.getIsActive());
+            record.setIsDeleted(existingRecord.getIsDeleted());
+        }
         if (entity instanceof TimestampedRecord record && existing.get() instanceof TimestampedRecord existingRecord) {
             AuditSupport.markUpdated(record, existingRecord);
         }
