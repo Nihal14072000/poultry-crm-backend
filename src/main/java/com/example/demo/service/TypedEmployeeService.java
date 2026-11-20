@@ -1,9 +1,9 @@
 package com.example.demo.service;
 
 import com.example.demo.entity.Employee;
-import com.example.demo.entity.CreatedRecord;
 import com.example.demo.entity.ActiveRecord;
 import com.example.demo.repository.EmployeeRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -30,9 +30,9 @@ public abstract class TypedEmployeeService extends CrudService<Employee> {
     @Override
     @Transactional(readOnly = true)
     public List<Employee> findAll() {
-        return CreatedRecord.newestFirst(repository.findAllByType(employeeType).stream()
+        return repository.findAllByType(employeeType, Sort.by(Sort.Order.desc("createDate").nullsLast())).stream()
                 .filter(ActiveRecord::isActiveRecord)
-                .toList());
+                .toList();
     }
 
     @Override
@@ -49,6 +49,7 @@ public abstract class TypedEmployeeService extends CrudService<Employee> {
         String username = accountProvisioner.validateNameForAccount(employee.getName());
         employee.setName(username);
         employee.setType(employeeType);
+        AuditSupport.markCreated(employee);
         Employee savedEmployee = repository.save(employee);
         accountProvisioner.createAccount(savedEmployee, username);
         return savedEmployee;
@@ -62,6 +63,8 @@ public abstract class TypedEmployeeService extends CrudService<Employee> {
         }
         employee.setId(id);
         employee.setType(employeeType);
+        Employee existing = repository.findById(id).orElseThrow();
+        AuditSupport.markUpdated(employee, existing);
         return Optional.of(repository.save(employee));
     }
 

@@ -17,7 +17,7 @@ import java.math.BigDecimal;
 @Table(name = "expenses", schema = "demo")
 @Data
 @NoArgsConstructor
-public class Expenses implements ActiveRecord {
+public class Expenses implements ActiveRecord, AuditableRecord {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "expenses_id_seq")
     @jakarta.persistence.SequenceGenerator(name = "expenses_id_seq", sequenceName = "expenses_id_seq", schema = "demo", allocationSize = 1)

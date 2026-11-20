@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @Table(name = "trip", schema = "demo")
 @Data
 @NoArgsConstructor
-public class Trip implements CreatedRecord {
+public class Trip implements AuditableRecord {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "trip_id")
@@ -27,6 +27,8 @@ public class Trip implements CreatedRecord {
     private Integer driverId;
     @Column(name = "supervisor_id")
     private Integer supervisorId;
+    @Column(name = "labour_id")
+    private Integer labourId;
     private String route;
     @Column(name = "\"date\"")
     private LocalDate date;

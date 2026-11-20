@@ -5,9 +5,11 @@ import com.example.demo.entity.BuyingParty;
 import com.example.demo.entity.Order;
 import com.example.demo.entity.SupplierPickup;
 import com.example.demo.repository.SupplierPickupRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -26,6 +28,12 @@ public class SupplierPickupService extends CrudService<SupplierPickup> {
         this.buyingPartyService = buyingPartyService;
         this.orderService = orderService;
         this.partyOrderRelationService = partyOrderRelationService;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SupplierPickup> findAll() {
+        return findAll(Sort.by(Sort.Order.desc("createdDate").nullsLast()));
     }
 
     @Transactional(readOnly = true)

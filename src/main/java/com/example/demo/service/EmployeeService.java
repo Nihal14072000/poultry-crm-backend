@@ -23,6 +23,7 @@ public class EmployeeService extends CrudService<Employee> {
     public Employee create(Employee employee){
         String username = accountProvisioner.validateNameForAccount(employee.getName());
         employee.setName(username);
+        AuditSupport.markCreated(employee);
         Employee savedEmployee = employeeRepository.save(employee);
         accountProvisioner.createAccount(savedEmployee, username);
         return savedEmployee;

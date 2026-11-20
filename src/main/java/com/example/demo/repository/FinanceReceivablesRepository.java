@@ -1,5 +1,6 @@
 package com.example.demo.repository;
 
+import com.example.demo.dto.FinanceSummaryResponse;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import java.util.List;
@@ -9,6 +10,57 @@ import java.util.Map;
 public class FinanceReceivablesRepository {
     private final JdbcClient jdbc;
     public FinanceReceivablesRepository(JdbcClient jdbc) { this.jdbc = jdbc; }
+
+    public FinanceSummaryResponse summary(Integer buyingPartyId, Integer sellingPartyId) {
+        return jdbc.sql("""
+                select
+                    coalesce((select sum(p.amount)
+                              from demo.payment p
+                              where p.payment_type = 'BUYER_RECEIPT'
+                                and p.status = 'COMPLETED'
+                                and (cast(:buyingPartyId as integer) is null or p.buying_party_id = :buyingPartyId)), 0) as total_received,
+                    coalesce((select sum(coalesce(o.weight, 0) * coalesce(o.rate, 0))
+                              from demo."order" o
+                              where o.isactive is true
+                                and o.isdeleted is not true
+                                and exists (
+                                    select 1
+                                    from demo.party_order_relation por
+                                    where por.order_id = o.id
+                                      and por.party_type = 'B'
+                                      and por.is_active is true
+                                      and por.is_deleted is false
+                                      and (cast(:buyingPartyId as integer) is null or por.party_id = :buyingPartyId)
+                                )), 0) as total_receivable,
+                    coalesce((select sum(p.amount)
+                              from demo.payment p
+                              where p.payment_type = 'SELLER_PAYOUT'
+                                and p.status = 'COMPLETED'
+                                and (cast(:sellingPartyId as integer) is null or p.selling_party_id = :sellingPartyId)), 0) as total_paid,
+                    coalesce((select sum(coalesce(o.weight, 0) * coalesce(o.rate, 0))
+                              from demo."order" o
+                              where o.isactive is true
+                                and o.isdeleted is not true
+                                and exists (
+                                    select 1
+                                    from demo.party_order_relation por
+                                    where por.order_id = o.id
+                                      and por.party_type = 'S'
+                                      and por.is_active is true
+                                      and por.is_deleted is false
+                                      and (cast(:sellingPartyId as integer) is null or por.party_id = :sellingPartyId)
+                                )), 0) as total_payable
+                """)
+                .param("buyingPartyId", buyingPartyId)
+                .param("sellingPartyId", sellingPartyId)
+                .query((rs, row) -> new FinanceSummaryResponse(
+                        rs.getBigDecimal("total_received"),
+                        rs.getBigDecimal("total_receivable"),
+                        rs.getBigDecimal("total_paid"),
+                        rs.getBigDecimal("total_payable")
+                ))
+                .single();
+    }
 
     public List<Map<String, Object>> buyers(Integer tripId, Integer partyId) {
         var query = jdbc.sql("select * from demo.finance_buyer_receivables_v where (cast(:tripId as integer) is null or trip_id = :tripId) and (cast(:partyId as integer) is null or buying_party_id = :partyId) order by trip_id, settlement_id")

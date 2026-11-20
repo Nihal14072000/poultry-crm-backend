@@ -259,7 +259,7 @@ CREATE TABLE demo.vendor_delievery ( id serial4 NOT NULL, selling_party_id int4 
 
 -- DROP TABLE demo."order";
 
-CREATE TABLE demo."order" ( id serial4 NOT NULL, order_type_id int4 NULL, qty int4 NULL, weight numeric(10, 2) NULL, rate numeric(10, 2) NULL, total numeric(12, 2) NULL, isactive bool DEFAULT true NULL, isdeleted bool DEFAULT false NULL, createdate timestamp DEFAULT CURRENT_TIMESTAMP NULL, updateddate timestamp DEFAULT CURRENT_TIMESTAMP NULL, created_by int4 NULL, updated_by int4 NULL, CONSTRAINT order_pkey PRIMARY KEY (id), CONSTRAINT order_order_type_id_fkey FOREIGN KEY (order_type_id) REFERENCES demo.order_type(id));
+CREATE TABLE demo."order" ( id serial4 NOT NULL, trip_id int4 NULL, order_type_id int4 NULL, qty int4 NULL, weight numeric(10, 2) NULL, rate numeric(10, 2) NULL, total numeric(12, 2) NULL, isactive bool DEFAULT true NULL, isdeleted bool DEFAULT false NULL, createdate timestamp DEFAULT CURRENT_TIMESTAMP NULL, updateddate timestamp DEFAULT CURRENT_TIMESTAMP NULL, created_by int4 NULL, updated_by int4 NULL, CONSTRAINT order_pkey PRIMARY KEY (id), CONSTRAINT order_order_type_id_fkey FOREIGN KEY (order_type_id) REFERENCES demo.order_type(id));
 
 
 -- demo.selling_party definition
@@ -277,7 +277,8 @@ CREATE TABLE demo.selling_party ( id serial4 NOT NULL, "name" varchar(150) NULL,
 
 -- DROP TABLE demo.trip;
 
-CREATE TABLE demo.trip ( trip_id serial4 NOT NULL, vehicle_id int4 NULL, driver_id int4 NULL, supervisor_id int4 NULL, route text NULL, "date" date NULL, pickup_id int4 NULL, drop_id int4 NULL, status varchar(50) NULL, createdate timestamp DEFAULT CURRENT_TIMESTAMP NULL, updateddate timestamp DEFAULT CURRENT_TIMESTAMP NULL, created_by int4 NULL, updated_by int4 NULL, buying_party_id int8 NULL, selling_party_id int8 NULL, CONSTRAINT trip_pkey PRIMARY KEY (trip_id), CONSTRAINT trip_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES demo.vehicle(id));
+CREATE TABLE demo.trip ( trip_id serial4 NOT NULL, vehicle_id int4 NULL, driver_id int4 NULL, supervisor_id int4 NULL, labour_id int4 NULL, route text NULL, "date" date NULL, pickup_id int4 NULL, drop_id int4 NULL, status varchar(50) NULL, createdate timestamp DEFAULT CURRENT_TIMESTAMP NULL, updateddate timestamp DEFAULT CURRENT_TIMESTAMP NULL, created_by int4 NULL, updated_by int4 NULL, buying_party_id int8 NULL, selling_party_id int8 NULL, CONSTRAINT trip_pkey PRIMARY KEY (trip_id), CONSTRAINT trip_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES demo.vehicle(id));
+ALTER TABLE demo."order" ADD CONSTRAINT order_trip_id_fkey FOREIGN KEY (trip_id) REFERENCES demo.trip(trip_id);
 
 
 -- demo.user_account definition
@@ -332,6 +333,8 @@ CREATE INDEX idx_payment_actual_order ON demo.payment USING btree (actual_order_
 CREATE INDEX idx_payment_buying_party ON demo.payment USING btree (buying_party_id);
 CREATE INDEX idx_payment_selling_party ON demo.payment USING btree (selling_party_id);
 CREATE INDEX idx_payment_type_status_date ON demo.payment USING btree (payment_type, status, payment_date);
+ALTER TABLE demo.payment ADD COLUMN trip_id int4 NULL;
+CREATE INDEX idx_payment_trip_id ON demo.payment USING btree (trip_id);
 
 
 -- demo.finance_payment_allocation definition

@@ -16,10 +16,12 @@ import java.time.LocalDateTime;
 @Table(name = "\"order\"", schema = "demo")
 @Data
 @NoArgsConstructor
-public class Order implements ActiveRecord {
+public class Order implements ActiveRecord, AuditableRecord {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+    @Column(name = "trip_id")
+    private Integer tripId;
     @Column(name = "order_type_id")
     private Integer orderTypeId;
     private Integer qty;

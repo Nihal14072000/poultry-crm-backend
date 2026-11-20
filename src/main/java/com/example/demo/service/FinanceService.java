@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.FinanceSummaryResponse;
 import com.example.demo.entity.FinanceOrderSettlement;
 import com.example.demo.entity.FinancePaymentAllocation;
 import com.example.demo.entity.Payment;
@@ -74,4 +75,7 @@ public class FinanceService {
     public List<Map<String, Object>> buyers(Integer tripId, Integer partyId) { return views.buyers(tripId, partyId); }
     public List<Map<String, Object>> sellers(Integer tripId, Integer partyId) { return views.sellers(tripId, partyId); }
     public List<Map<String, Object>> tripSummaries(Integer tripId) { return views.trips(tripId); }
+    public FinanceSummaryResponse summary(Integer buyingPartyId, Integer sellingPartyId) {
+        return views.summary(buyingPartyId, sellingPartyId);
+    }
 }

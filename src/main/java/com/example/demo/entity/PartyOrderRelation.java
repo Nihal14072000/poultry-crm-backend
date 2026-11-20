@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @Table(name = "party_order_relation", schema = "demo")
 @Data
 @NoArgsConstructor
-public class PartyOrderRelation implements ActiveRecord {
+public class PartyOrderRelation implements ActiveRecord, AuditableRecord {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "relation_id")

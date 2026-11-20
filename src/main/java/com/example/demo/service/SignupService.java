@@ -50,6 +50,7 @@ public class SignupService {
         employee.setNumber(request.number());
         employee.setType("EMPLOYEE");
         employee.setStatus("ACTIVE");
+        AuditSupport.markCreated(employee);
         Employee savedEmployee = employeeRepository.save(employee);
 
         UserAccount account = new UserAccount();

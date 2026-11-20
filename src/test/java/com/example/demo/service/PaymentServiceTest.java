@@ -1,14 +1,17 @@
 package com.example.demo.service;
 
 import com.example.demo.entity.Payment;
+import com.example.demo.repository.FinancePaymentAllocationRepository;
 import com.example.demo.repository.PaymentRepository;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 

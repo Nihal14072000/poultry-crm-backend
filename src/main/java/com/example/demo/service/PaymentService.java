@@ -22,6 +22,7 @@ import com.example.demo.repository.TripRepository;
 import com.example.demo.repository.VehicleRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -30,6 +31,7 @@ import org.springframework.http.HttpStatus;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 public class PaymentService extends CrudService<Payment> {
     private static final Logger log = LoggerFactory.getLogger(PaymentService.class);
@@ -91,36 +93,45 @@ public class PaymentService extends CrudService<Payment> {
     }
 
     private PaymentRetrieveResponse toRetrieveResponse(Payment payment) {
-        BuyingPartydto buyingParty = payment.getBuyingPartyId() == null
-                ? null
-                : buyingPartyRepository.findById(payment.getBuyingPartyId())
-                        .filter(ActiveRecord::isActiveRecord)
-                        .map(this::toBuyingPartyDto)
-                        .orElse(null);
-        Order actualOrder = payment.getActualOrderId() == null
-                ? null
-                : orderRepository.findById(payment.getActualOrderId())
-                        .filter(ActiveRecord::isActiveRecord).orElse(null);
-        TripRetrieveResponse trip = payment.getTripId() == null
-                ? null
-                : tripRepository.findById(payment.getTripId())
-                        .map(this::toTripRetrieveResponse)
-                        .orElse(null);
-        SellingPartydto sellingParty = payment.getSellingPartyId() == null
-                ? null
-                : sellingPartyRepository.findById(payment.getSellingPartyId())
-                        .filter(ActiveRecord::isActiveRecord)
-                        .map(this::toSellingPartyDto)
-                        .orElse(null);
+        try{
+            BuyingPartydto buyingParty = payment.getBuyingPartyId() == null
+                    ? null
+                    : buyingPartyRepository.findById(payment.getBuyingPartyId())
+                    .filter(ActiveRecord::isActiveRecord)
+                    .map(this::toBuyingPartyDto)
+                    .orElse(null);
+            Order actualOrder = payment.getActualOrderId() == null
+                    ? null
+                    : orderRepository.findById(payment.getActualOrderId())
+                    .filter(ActiveRecord::isActiveRecord).orElse(null);
+            TripRetrieveResponse trip = payment.getTripId() == null
+                    ? null
+                    : tripRepository.findById(payment.getTripId())
+                    .map(this::toTripRetrieveResponse)
+                    .orElse(null);
+            SellingPartydto sellingParty = payment.getSellingPartyId() == null
+                    ? null
+                    : sellingPartyRepository.findById(payment.getSellingPartyId())
+                    .filter(ActiveRecord::isActiveRecord)
+                    .map(this::toSellingPartyDto)
+                    .orElse(null);
 
-        return PaymentRetrieveResponse.from(
-                payment,
-                buyingParty,
-                actualOrder,
-                trip,
-                sellingParty,
-                allocationRepository.findByPaymentId(payment.getId())
-        );
+            return PaymentRetrieveResponse.from(
+                    payment,
+                    buyingParty,
+                    actualOrder,
+                    trip,
+                    sellingParty,
+                    allocationRepository.findByPaymentId(payment.getId())
+            );
+
+        } catch (Exception e) {
+            log.info("Error retrieving payment with ID {}: {}", payment.getId(), e.getMessage());
+            return null;
+        }
+
+
+
     }
 
     private TripRetrieveResponse toTripRetrieveResponse(Trip trip) {
@@ -197,7 +208,7 @@ public class PaymentService extends CrudService<Payment> {
     @Transactional
     public Payment create(Payment payment) {
         validate(payment);
-        if (payment.getCreateDate() == null) payment.setCreateDate(java.time.LocalDateTime.now());
+        AuditSupport.markCreated(payment);
         if (payment.getStatus() == null) payment.setStatus("PENDING");
         return repository.save(payment);
     }
@@ -208,8 +219,15 @@ public class PaymentService extends CrudService<Payment> {
         if (!repository.existsById(id)) return java.util.Optional.empty();
         validate(payment);
         payment.setId(id);
-        payment.setUpdatedDate(java.time.LocalDateTime.now());
+        Payment existing = repository.findById(id).orElseThrow();
+        AuditSupport.markUpdated(payment, existing);
         return java.util.Optional.of(repository.save(payment));
+    }
+
+    @Transactional
+    public void deleteByTripId(Integer tripId) {
+        allocationRepository.deleteByPaymentTripId(tripId);
+        repository.deleteByTripId(tripId);
     }
 
     private void validate(Payment payment) {

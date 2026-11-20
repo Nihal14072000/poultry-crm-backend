@@ -3,6 +3,7 @@ package com.example.demo.service;
 import com.example.demo.entity.Trip;
 import com.example.demo.entity.BuyingParty;
 import com.example.demo.entity.Employee;
+import com.example.demo.entity.Order;
 import com.example.demo.entity.SellingParty;
 import com.example.demo.entity.TripPartyRelation;
 import com.example.demo.entity.Payment;
@@ -19,7 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.time.LocalDateTime;
 
 @Service
 public class TripService extends CrudService<Trip> {
@@ -30,6 +30,7 @@ public class TripService extends CrudService<Trip> {
     private final VehicleService vehicleService;
     private final DriverService driverService;
     private final SupervisorService supervisorService;
+    private final EmployeeService employeeService;
     private final BuyingPartyService buyingPartyService;
     private final SellingPartyService sellingPartyService;
     private final TripPartyRelationService tripPartyRelationService;
@@ -42,6 +43,7 @@ public class TripService extends CrudService<Trip> {
             VehicleService vehicleService,
             DriverService driverService,
             SupervisorService supervisorService,
+            EmployeeService employeeService,
             BuyingPartyService buyingPartyService,
             SellingPartyService sellingPartyService,
             TripPartyRelationService tripPartyRelationService,
@@ -54,6 +56,7 @@ public class TripService extends CrudService<Trip> {
         this.vehicleService = vehicleService;
         this.driverService = driverService;
         this.supervisorService = supervisorService;
+        this.employeeService = employeeService;
         this.buyingPartyService = buyingPartyService;
         this.sellingPartyService = sellingPartyService;
         this.tripPartyRelationService = tripPartyRelationService;
@@ -89,8 +92,10 @@ public class TripService extends CrudService<Trip> {
 
     @Transactional
     public TripRetrieveResponse createTrip(TripRetrieveResponse request) {
-        Trip trip = tripRepository.save(toTrip(request));
-        saveParties(trip.getTripId(), request);
+        Trip trip = toTrip(request);
+        AuditSupport.markCreated(trip);
+        trip = tripRepository.save(trip);
+        saveParties(trip.getTripId(), request, false);
         saveFinanceDetails(trip.getTripId(), request);
         return toResponse(trip);
     }
@@ -104,9 +109,22 @@ public class TripService extends CrudService<Trip> {
 
         Trip trip = toTrip(request);
         trip.setTripId(tripId);
+        AuditSupport.markUpdated(trip, existingTrip);
         Trip savedTrip = tripRepository.save(trip);
-        saveParties(tripId, request);
+        saveParties(tripId, request, true);
         return Optional.of(toResponse(savedTrip));
+    }
+
+    @Override
+    @Transactional
+    public boolean delete(Integer id) {
+        if (!tripRepository.existsById(id)) {
+            return false;
+        }
+        partyOrderRelationService.deleteOrdersByTripId(id);
+        paymentService.deleteByTripId(id);
+        tripRepository.deleteById(id);
+        return true;
     }
 
     private Trip toTrip(TripRetrieveResponse request) {
@@ -120,25 +138,25 @@ public class TripService extends CrudService<Trip> {
         if (request.getSupervisor() != null) {
             trip.setSupervisorId(request.getSupervisor().getId());
         }
+        if (request.getLabour() != null) {
+            trip.setLabourId(request.getLabour().getId());
+        }
         trip.setRoute(request.getRoute());
         trip.setDate(request.getDate());
         trip.setPickupId(request.getPickupId());
         trip.setDropId(request.getDropId());
         trip.setStatus(request.getStatus());
-        trip.setCreateDate(request.getCreateDate());
-        trip.setUpdatedDate(request.getUpdatedDate());
-        trip.setCreatedBy(request.getCreatedBy());
-        trip.setUpdatedBy(request.getUpdatedBy());
         return trip;
     }
 
-    private void saveParties(Integer tripId, TripRetrieveResponse request) {
+    private void saveParties(Integer tripId, TripRetrieveResponse request, boolean replaceExistingOrders) {
         List<Integer> buyingPartyIds = request.getBuyingParties() == null ? null
                 : request.getBuyingParties().stream()
                         .map(partyRequest -> {
                             BuyingParty party = saveBuyingParty(partyRequest);
-                            partyOrderRelationService.replaceOrders(
-                                    party.getId(), partyRequest.getOrder(), BUYING_PARTY_TYPE);
+                            savePartyOrders(
+                                    tripId, party.getId(), partyRequest.getOrder(),
+                                    BUYING_PARTY_TYPE, replaceExistingOrders);
                             return party.getId();
                         })
                         .toList();
@@ -146,12 +164,27 @@ public class TripService extends CrudService<Trip> {
                 : request.getSellingParties().stream()
                         .map(partyRequest -> {
                             SellingParty party = saveSellingParty(partyRequest);
-                            partyOrderRelationService.replaceOrders(
-                                    party.getId(), partyRequest.getOrder(), SELLING_PARTY_TYPE);
+                            savePartyOrders(
+                                    tripId, party.getId(), partyRequest.getOrder(),
+                                    SELLING_PARTY_TYPE, replaceExistingOrders);
                             return party.getId();
                         })
                         .toList();
         tripPartyRelationService.replaceParties(tripId, buyingPartyIds, sellingPartyIds);
+    }
+
+    private void savePartyOrders(
+            Integer tripId,
+            Integer partyId,
+            List<Order> orders,
+            String partyType,
+            boolean replaceExistingOrders
+    ) {
+        if (replaceExistingOrders) {
+            partyOrderRelationService.replaceOrders(partyId, orders, partyType, tripId);
+        } else {
+            partyOrderRelationService.addOrders(partyId, orders, partyType, tripId);
+        }
     }
 
     private void saveFinanceDetails(Integer tripId, TripRetrieveResponse request) {
@@ -165,7 +198,6 @@ public class TripService extends CrudService<Trip> {
                 throw new IllegalArgumentException("Each expense needs a positive amount and date");
             expense.setId(null);
             expense.setTripId(tripId);
-            if (expense.getCreateDate() == null) expense.setCreateDate(LocalDateTime.now());
             expensesService.create(expense);
         }
     }
@@ -177,11 +209,6 @@ public class TripService extends CrudService<Trip> {
         party.setLocation(request.getLocation());
         party.setIsActive(request.getIsActive());
         party.setIsDeleted(request.getIsDeleted());
-        party.setCreateDate(request.getCreateDate());
-        party.setUpdatedDate(request.getUpdatedDate());
-        party.setCreatedBy(request.getCreatedBy());
-        party.setUpdatedBy(request.getUpdatedBy());
-
         if (request.getId() == null) {
             return buyingPartyService.create(party);
         }
@@ -197,11 +224,6 @@ public class TripService extends CrudService<Trip> {
         party.setLocation(request.getLocation());
         party.setIsActive(request.getIsActive());
         party.setIsDeleted(request.getIsDeleted());
-        party.setCreateDate(request.getCreateDate());
-        party.setUpdatedDate(request.getUpdatedDate());
-        party.setCreatedBy(request.getCreatedBy());
-        party.setUpdatedBy(request.getUpdatedBy());
-
         if (request.getId() == null) {
             return sellingPartyService.create(party);
         }
@@ -218,13 +240,14 @@ public class TripService extends CrudService<Trip> {
                 .vehicle(trip.getVehicleId() == null ? null : vehicleService.findById(trip.getVehicleId()).orElse(null))
                 .driver(trip.getDriverId() == null ? null : driverService.findById(trip.getDriverId()).orElse(null))
                 .supervisor(trip.getSupervisorId() == null ? null : supervisorService.findById(trip.getSupervisorId()).orElse(null))
+                .labour(trip.getLabourId() == null ? null : employeeService.findById(trip.getLabourId()).orElse(null))
                 .buyingParties(relations.stream()
                         .filter(relation -> BUYING_PARTY_TYPE.equals(relation.getPartyType()))
-                        .map(this::toBuyingPartyDto)
+                        .map(relation -> toBuyingPartyDto(trip.getTripId(), relation))
                         .toList())
                 .sellingParties(relations.stream()
                         .filter(relation -> SELLING_PARTY_TYPE.equals(relation.getPartyType()))
-                        .map(this::toSellingPartyDto)
+                        .map(relation -> toSellingPartyDto(trip.getTripId(), relation))
                         .toList())
                 .route(trip.getRoute())
                 .date(trip.getDate())
@@ -238,16 +261,15 @@ public class TripService extends CrudService<Trip> {
                 .build();
     }
 
-    private BuyingPartydto toBuyingPartyDto(TripPartyRelation relation) {
-        BuyingParty party = buyingPartyService.findById(relation.getPartyId())
-                .orElseThrow(() -> new IllegalStateException(
-                        "Buying party not found for trip-party relation " + relation.getRelationId()));
+    private BuyingPartydto toBuyingPartyDto(Integer tripId, TripPartyRelation relation) {
+        BuyingParty party = buyingPartyService.findById(relation.getPartyId()).get();
         return BuyingPartydto.builder()
                 .id(party.getId())
                 .name(party.getName())
                 .contact(party.getContact())
                 .location(party.getLocation())
-                .order(partyOrderRelationService.findActiveOrders(party.getId(), BUYING_PARTY_TYPE))
+                .order(partyOrderRelationService.findActiveOrders(
+                        tripId, party.getId(), BUYING_PARTY_TYPE))
                 .isActive(party.getIsActive())
                 .isDeleted(party.getIsDeleted())
                 .createDate(party.getCreateDate())
@@ -257,7 +279,7 @@ public class TripService extends CrudService<Trip> {
                 .build();
     }
 
-    private SellingPartydto toSellingPartyDto(TripPartyRelation relation) {
+    private SellingPartydto toSellingPartyDto(Integer tripId, TripPartyRelation relation) {
         SellingParty party = sellingPartyService.findById(relation.getPartyId())
                 .orElseThrow(() -> new IllegalStateException(
                         "Selling party not found for trip-party relation " + relation.getRelationId()));
@@ -266,7 +288,8 @@ public class TripService extends CrudService<Trip> {
                 .name(party.getName())
                 .contact(party.getContact())
                 .location(party.getLocation())
-                .order(partyOrderRelationService.findActiveOrders(party.getId(), SELLING_PARTY_TYPE))
+                .order(partyOrderRelationService.findActiveOrders(
+                        tripId, party.getId(), SELLING_PARTY_TYPE))
                 .isActive(party.getIsActive())
                 .isDeleted(party.getIsDeleted())
                 .createDate(party.getCreateDate())
