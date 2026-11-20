@@ -45,8 +45,7 @@ public class PartyOrderRelationService {
             return;
         }
 
-        List<PartyOrderRelation> existingRelations =
-                repository.findByPartyIdAndPartyType(partyId, partyType);
+        List<PartyOrderRelation> existingRelations = findRelationsForReplacement(partyId, partyType, tripId);
         existingRelations.stream()
                 .filter(this::isActive)
                 .forEach(this::deactivate);
@@ -78,7 +77,7 @@ public class PartyOrderRelationService {
             return;
         }
 
-        Set<Integer> activeOrderIds = repository.findByPartyIdAndPartyType(partyId, partyType).stream()
+        Set<Integer> activeOrderIds = findRelationsForReplacement(partyId, partyType, tripId).stream()
                 .filter(this::isActive)
                 .map(PartyOrderRelation::getOrderId)
                 .collect(Collectors.toSet());
@@ -111,6 +110,19 @@ public class PartyOrderRelationService {
     @Transactional(readOnly = true)
     public List<Order> findActiveOrders(Integer tripId, Integer partyId, String partyType) {
         return orderService.findActiveByTripIdAndPartyIdAndPartyType(tripId, partyId, partyType);
+    }
+
+    private List<PartyOrderRelation> findRelationsForReplacement(
+            Integer partyId,
+            String partyType,
+            Integer tripId
+    ) {
+        // Trip orders must be isolated by trip. A null tripId is reserved for
+        // actual pickup/delivery records, whose party IDs are their record IDs.
+        if (tripId == null) {
+            return repository.findByPartyIdAndPartyType(partyId, partyType);
+        }
+        return repository.findByPartyIdAndPartyTypeAndTripId(partyId, partyType, tripId);
     }
 
     private Order saveOrderForTrip(Order requestedOrder, Integer tripId) {
