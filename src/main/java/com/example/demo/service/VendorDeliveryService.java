@@ -23,7 +23,6 @@ public class VendorDeliveryService extends CrudService<VendorDelivery> {
         VendorDelivery current = existing.get();
         delivery.setIsActive(current.getIsActive());
         delivery.setIsDeleted(current.getIsDeleted());
-        AuditSupport.markUpdated(delivery, current);
         return super.update(id, delivery);
     }
 }
