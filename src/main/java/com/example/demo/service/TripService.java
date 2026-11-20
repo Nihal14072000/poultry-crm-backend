@@ -188,45 +188,72 @@ public class TripService extends CrudService<Trip> {
     }
 
     private void saveFinanceDetails(Integer tripId, TripRetrieveResponse request) {
-        for (Payment payment : request.getPayments() == null ? List.<Payment>of() : request.getPayments()) {
-            payment.setId(null);
+        for (Payment requested : request.getPayments() == null ? List.<Payment>of() : request.getPayments()) {
+            Payment payment = new Payment();
+            payment.setBuyingPartyId(requested.getBuyingPartyId());
+            payment.setActualOrderId(requested.getActualOrderId());
             payment.setTripId(tripId);
+            payment.setNote(requested.getNote());
+            payment.setPaymentType(requested.getPaymentType());
+            payment.setAmount(requested.getAmount());
+            payment.setPaymentDate(requested.getPaymentDate());
+            payment.setPaymentMethod(requested.getPaymentMethod());
+            payment.setExternalReference(requested.getExternalReference());
+            payment.setSellingPartyId(requested.getSellingPartyId());
+            payment.setStatus(requested.getStatus());
             paymentService.create(payment);
         }
-        for (Expenses expense : request.getExpenses() == null ? List.<Expenses>of() : request.getExpenses()) {
-            if (expense.getAmount() == null || expense.getAmount().signum() <= 0 || expense.getExpenseDate() == null)
+        for (Expenses requested : request.getExpenses() == null ? List.<Expenses>of() : request.getExpenses()) {
+            if (requested.getAmount() == null || requested.getAmount().signum() <= 0 || requested.getExpenseDate() == null) {
                 throw new IllegalArgumentException("Each expense needs a positive amount and date");
-            expense.setId(null);
+            }
+            Expenses expense = new Expenses();
             expense.setTripId(tripId);
+            expense.setAmount(requested.getAmount());
+            expense.setExpenseDate(requested.getExpenseDate());
+            expense.setCategory(requested.getCategory());
+            expense.setSellingPartyId(requested.getSellingPartyId());
+            expense.setActualOrderId(requested.getActualOrderId());
+            expense.setNote(requested.getNote());
             expensesService.create(expense);
         }
     }
 
     private BuyingParty saveBuyingParty(BuyingPartydto request) {
-        BuyingParty party = new BuyingParty();
-        party.setName(request.getName());
-        party.setContact(request.getContact());
-        party.setLocation(request.getLocation());
-        party.setIsActive(request.getIsActive());
-        party.setIsDeleted(request.getIsDeleted());
         if (request.getId() == null) {
+            BuyingParty party = new BuyingParty();
+            party.setName(request.getName());
+            party.setContact(request.getContact());
+            party.setLocation(request.getLocation());
             return buyingPartyService.create(party);
         }
+
+        BuyingParty party = buyingPartyService.findById(request.getId())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Buying party not found: " + request.getId()));
+        if (request.getName() != null) party.setName(request.getName());
+        if (request.getContact() != null) party.setContact(request.getContact());
+        if (request.getLocation() != null) party.setLocation(request.getLocation());
         return buyingPartyService.update(request.getId(), party)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Buying party not found: " + request.getId()));
     }
 
     private SellingParty saveSellingParty(SellingPartydto request) {
-        SellingParty party = new SellingParty();
-        party.setName(request.getName());
-        party.setContact(request.getContact());
-        party.setLocation(request.getLocation());
-        party.setIsActive(request.getIsActive());
-        party.setIsDeleted(request.getIsDeleted());
         if (request.getId() == null) {
+            SellingParty party = new SellingParty();
+            party.setName(request.getName());
+            party.setContact(request.getContact());
+            party.setLocation(request.getLocation());
             return sellingPartyService.create(party);
         }
+
+        SellingParty party = sellingPartyService.findById(request.getId())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Selling party not found: " + request.getId()));
+        if (request.getName() != null) party.setName(request.getName());
+        if (request.getContact() != null) party.setContact(request.getContact());
+        if (request.getLocation() != null) party.setLocation(request.getLocation());
         return sellingPartyService.update(request.getId(), party)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Selling party not found: " + request.getId()));
