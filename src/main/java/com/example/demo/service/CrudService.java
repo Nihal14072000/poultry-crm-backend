@@ -43,6 +43,9 @@ public class CrudService<T extends CreatedRecord> {
 
     @Transactional
     public T create(T entity) {
+        // All CRUD-managed entities use generated identifiers. Never allow a
+        // request body to turn a create operation into an update of an existing row.
+        idSetter.accept(entity, null);
         if (entity instanceof TimestampedRecord record) {
             AuditSupport.markCreated(record);
         }
