@@ -31,11 +31,13 @@ class TripPartyRelationServiceTest {
 
         ArgumentCaptor<List<TripPartyRelation>> captor = ArgumentCaptor.forClass(List.class);
         verify(repository, times(2)).saveAll(captor.capture());
-        List<TripPartyRelation> saved = captor.getAllValues().get(0);
-        assertEquals(1L, saved.stream().filter(r -> "B".equals(r.getPartyType())
+        List<TripPartyRelation> savedExisting = captor.getAllValues().get(0);
+        List<TripPartyRelation> savedNew = captor.getAllValues().get(1);
+        assertEquals(1L, savedExisting.stream().filter(r -> "S".equals(r.getPartyType())
                 && Boolean.TRUE.equals(r.getIsActive())).count());
-        assertEquals(1L, saved.stream().filter(r -> "S".equals(r.getPartyType())
-                && Boolean.TRUE.equals(r.getIsActive())).count());
+        assertEquals(1, savedNew.size());
+        assertEquals("B", savedNew.get(0).getPartyType());
+        assertTrue(savedNew.get(0).getIsActive());
     }
 
     @Test
