@@ -61,16 +61,34 @@ class PartyOrderRelationServiceTest {
     }
 
     @Test
-    void actualOrderReplacementWithoutTripIdKeepsUsingActualRecordPartyScope() {
+    void replacingSupplierPickupOrdersDeactivatesOnlyThatPickupRelations() {
+        assertActualOrderRelationsAreScopedToRecord(
+                25, PartyOrderRelationService.SUPPLIER_PICKUP_PARTY_TYPE);
+    }
+
+    @Test
+    void replacingVendorDeliveryOrdersDeactivatesOnlyThatDeliveryRelations() {
+        assertActualOrderRelationsAreScopedToRecord(
+                35, PartyOrderRelationService.VENDOR_DELIVERY_PARTY_TYPE);
+    }
+
+    private void assertActualOrderRelationsAreScopedToRecord(Integer recordId, String partyType) {
         var repository = mock(PartyOrderRelationRepository.class);
         var orderService = mock(OrderService.class);
+        var actualRecordRelation = new PartyOrderRelation();
+        actualRecordRelation.setIsActive(true);
+        actualRecordRelation.setIsDeleted(false);
+        when(repository.findByPartyIdAndPartyType(recordId, partyType))
+                .thenReturn(List.of(actualRecordRelation));
+
         var service = new PartyOrderRelationService(repository, orderService);
+        service.replaceOrders(recordId, List.of(), partyType);
 
-        service.replaceOrders(25, List.of(), PartyOrderRelationService.SUPPLIER_PICKUP_PARTY_TYPE);
-
-        verify(repository).findByPartyIdAndPartyType(
-                25, PartyOrderRelationService.SUPPLIER_PICKUP_PARTY_TYPE);
+        assertEquals(false, actualRecordRelation.getIsActive());
+        assertEquals(true, actualRecordRelation.getIsDeleted());
+        verify(repository).findByPartyIdAndPartyType(recordId, partyType);
         verify(repository, never()).findByPartyIdAndPartyTypeAndTripId(
-                25, PartyOrderRelationService.SUPPLIER_PICKUP_PARTY_TYPE, null);
+                recordId, partyType, null);
+        verify(repository).saveAll(anyList());
     }
 }
