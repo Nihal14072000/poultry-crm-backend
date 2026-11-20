@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -29,11 +30,11 @@ class TripPartyRelationServiceTest {
         assertTrue(selling.getIsActive());
 
         ArgumentCaptor<List<TripPartyRelation>> captor = ArgumentCaptor.forClass(List.class);
-        verify(repository).saveAll(captor.capture());
-        List<TripPartyRelation> saved = captor.getValue();
-        assertEquals(1, saved.stream().filter(r -> "B".equals(r.getPartyType())
+        verify(repository, times(2)).saveAll(captor.capture());
+        List<TripPartyRelation> saved = captor.getAllValues().get(0);
+        assertEquals(1L, saved.stream().filter(r -> "B".equals(r.getPartyType())
                 && Boolean.TRUE.equals(r.getIsActive())).count());
-        assertEquals(1, saved.stream().filter(r -> "S".equals(r.getPartyType())
+        assertEquals(1L, saved.stream().filter(r -> "S".equals(r.getPartyType())
                 && Boolean.TRUE.equals(r.getIsActive())).count());
     }
 
