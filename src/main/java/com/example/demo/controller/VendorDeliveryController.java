@@ -1,7 +1,8 @@
 package com.example.demo.controller;
 
-import com.example.demo.entity.VendorDelivery;
+import com.example.demo.dto.VendorDeliveryWriteRequest;
 import com.example.demo.entity.Order;
+import com.example.demo.entity.VendorDelivery;
 import com.example.demo.service.PartyOrderRelationService;
 import com.example.demo.service.VendorDeliveryService;
 import org.springframework.http.HttpStatus;
@@ -42,13 +43,17 @@ public class VendorDeliveryController {
     }
 
     @PostMapping
-    public ResponseEntity<VendorDelivery> create(@RequestBody VendorDelivery delivery) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.create(delivery));
+    public ResponseEntity<VendorDelivery> create(@RequestBody VendorDeliveryWriteRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.create(toEntity(request)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<VendorDelivery> update(@PathVariable Integer id, @RequestBody VendorDelivery delivery) {
-        return service.update(id, delivery).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<VendorDelivery> update(
+            @PathVariable Integer id,
+            @RequestBody VendorDeliveryWriteRequest request
+    ) {
+        return service.update(id, toEntity(request)).map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
@@ -77,5 +82,13 @@ public class VendorDeliveryController {
                 id, orders, PartyOrderRelationService.VENDOR_DELIVERY_PARTY_TYPE);
         return ResponseEntity.ok(partyOrderRelationService.findActiveOrders(
                 id, PartyOrderRelationService.VENDOR_DELIVERY_PARTY_TYPE));
+    }
+
+    private VendorDelivery toEntity(VendorDeliveryWriteRequest request) {
+        VendorDelivery delivery = new VendorDelivery();
+        delivery.setSellingPartyId(request.getSellingPartyId());
+        delivery.setActualOrderId(request.getActualOrderId());
+        delivery.setNote(request.getNote());
+        return delivery;
     }
 }
