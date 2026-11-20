@@ -110,14 +110,16 @@ public class DeliveryService extends CrudService<Delivery> {
             delivery.setExpenseId(expenseId);
         }
         delivery.setStatus(request.getStatus());
-        delivery.setIsActive(request.getIsActive());
-        delivery.setIsDeleted(request.getIsDeleted());
         Delivery existingDelivery = delivery.getId() == null
                 ? null
                 : deliveryRepository.findById(delivery.getId()).orElse(null);
         if (existingDelivery == null) {
             AuditSupport.markCreated(delivery);
         } else {
+            // Activity and audit metadata are server-managed, even on this
+            // legacy upsert endpoint.
+            delivery.setIsActive(existingDelivery.getIsActive());
+            delivery.setIsDeleted(existingDelivery.getIsDeleted());
             AuditSupport.markUpdated(delivery, existingDelivery);
         }
         Delivery savedDelivery = deliveryRepository.save(delivery);
@@ -158,8 +160,6 @@ public class DeliveryService extends CrudService<Delivery> {
         vendorDelivery.setSellingPartyId(saveSellingParty(request.getSellingParty()));
 
         vendorDelivery.setNote(request.getNote());
-        vendorDelivery.setIsActive(request.getIsActive());
-        vendorDelivery.setIsDeleted(request.getIsDeleted());
         VendorDelivery savedVendorDelivery = vendorDeliveryService.update(request.getId(), vendorDelivery)
                 .orElseGet(() -> vendorDeliveryService.create(vendorDelivery));
 
