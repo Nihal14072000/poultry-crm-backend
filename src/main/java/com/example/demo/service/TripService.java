@@ -107,10 +107,20 @@ public class TripService extends CrudService<Trip> {
             return Optional.empty();
         }
 
-        Trip trip = toTrip(request);
-        trip.setTripId(tripId);
-        AuditSupport.markUpdated(trip, existingTrip);
-        Trip savedTrip = tripRepository.save(trip);
+        Trip changes = toTrip(request);
+        // Apply the request to the managed entity so legacy columns and audit
+        // metadata not represented by this API are not nulled during an update.
+        existingTrip.setVehicleId(changes.getVehicleId());
+        existingTrip.setDriverId(changes.getDriverId());
+        existingTrip.setSupervisorId(changes.getSupervisorId());
+        existingTrip.setLabourId(changes.getLabourId());
+        existingTrip.setRoute(changes.getRoute());
+        existingTrip.setDate(changes.getDate());
+        existingTrip.setPickupId(changes.getPickupId());
+        existingTrip.setDropId(changes.getDropId());
+        existingTrip.setStatus(changes.getStatus());
+        AuditSupport.markUpdated(existingTrip, existingTrip);
+        Trip savedTrip = tripRepository.save(existingTrip);
         saveParties(tripId, request, true);
         return Optional.of(toResponse(savedTrip));
     }
