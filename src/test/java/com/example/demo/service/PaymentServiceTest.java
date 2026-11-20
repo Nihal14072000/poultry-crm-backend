@@ -10,6 +10,9 @@ import java.math.BigDecimal;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.List;
 
 class PaymentServiceTest {
     private final PaymentRepository repository = mock(PaymentRepository.class);
@@ -45,6 +48,13 @@ class PaymentServiceTest {
         payment.setSellingPartyId(2);
 
         assertThrows(ResponseStatusException.class, () -> service.create(payment));
+    }
+
+    @Test
+    void retrieveByTripIdReturnsEmptyWhenTripHasNoPayments() {
+        when(repository.findByTripId(42)).thenReturn(List.of());
+
+        assertEquals(List.of(), service.retrieveByTripId(42));
     }
 
     private Payment payment() {
