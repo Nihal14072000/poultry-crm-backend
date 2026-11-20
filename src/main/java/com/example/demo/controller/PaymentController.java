@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.PaymentRetrieveResponse;
+import com.example.demo.dto.PaymentWriteRequest;
 import com.example.demo.entity.Payment;
 import com.example.demo.service.PaymentService;
 import org.springframework.http.HttpStatus;
@@ -51,17 +52,34 @@ public class PaymentController {
     }
 
     @PostMapping
-    public ResponseEntity<Payment> create(@RequestBody Payment payment) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.create(payment));
+    public ResponseEntity<Payment> create(@RequestBody PaymentWriteRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.create(toEntity(request)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Payment> update(@PathVariable Integer id, @RequestBody Payment payment) {
-        return service.update(id, payment).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<Payment> update(@PathVariable Integer id, @RequestBody PaymentWriteRequest request) {
+        return service.update(id, toEntity(request)).map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
         return service.delete(id) ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+    }
+
+    private Payment toEntity(PaymentWriteRequest request) {
+        Payment payment = new Payment();
+        payment.setBuyingPartyId(request.getBuyingPartyId());
+        payment.setActualOrderId(request.getActualOrderId());
+        payment.setTripId(request.getTripId());
+        payment.setNote(request.getNote());
+        payment.setPaymentType(request.getPaymentType());
+        payment.setAmount(request.getAmount());
+        payment.setPaymentDate(request.getPaymentDate());
+        payment.setPaymentMethod(request.getPaymentMethod());
+        payment.setExternalReference(request.getExternalReference());
+        payment.setSellingPartyId(request.getSellingPartyId());
+        payment.setStatus(request.getStatus());
+        return payment;
     }
 }
