@@ -122,16 +122,24 @@ jobs:
 
           echo $! > "$DEPLOY_PATH/app.pid"
 
-          for attempt in $(seq 1 30); do
-            if curl --fail --silent http://127.0.0.1:1111/actuator/health >/dev/null; then
-              echo "Backend is responding on port 1111."
-              exit 0
-            fi
+          # Spring Security protects application routes, so an unauthenticated
+          # request may correctly return 401/403 even when the app is healthy.
+          # Treat those responses as proof that the HTTP server is ready.
+          for attempt in $(seq 1 90); do
+            HTTP_CODE=$(curl --silent --show-error --output /dev/null --write-out "%{http_code}" \
+              --max-time 5 http://127.0.0.1:1111/ || true)
+            case "$HTTP_CODE" in
+              2??|401|403)
+                echo "Backend is responding on port 1111 (HTTP $HTTP_CODE)."
+                exit 0
+                ;;
+            esac
+            echo "Waiting for backend readiness (attempt $attempt/90, HTTP ${HTTP_CODE:-no response})..."
             sleep 2
           done
 
-          echo "Health check failed. Recent application logs:"
-          tail -n 100 "$DEPLOY_PATH/app.log" || true
+          echo "Backend readiness check failed. Recent application logs:"
+          tail -n 200 "$DEPLOY_PATH/app.log" || true
           exit 1
           REMOTE
 
