@@ -102,6 +102,15 @@ public class ReportJobRepository {
                 """).param("message", message).param("id", id).update();
     }
 
+    public void requeueStaleProcessing() {
+        jdbc.sql("""
+                update demo.generated_report
+                   set status = 'QUEUED', started_at = null
+                 where status = 'PROCESSING'
+                   and started_at < current_timestamp - interval '1 hour'
+                """).update();
+    }
+
     public boolean retry(Long id, Integer userId) {
         return jdbc.sql("""
                 update demo.generated_report
