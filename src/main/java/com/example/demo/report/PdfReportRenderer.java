@@ -4,6 +4,7 @@ import com.lowagie.text.*;
 import com.lowagie.text.pdf.*;
 import org.springframework.stereotype.Component;
 
+import java.awt.Color;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -107,6 +108,7 @@ public class PdfReportRenderer {
     private String format(Object value) {
         if (value == null) return "-";
         if (value instanceof java.sql.Date date) return date.toLocalDate().format(DATE);
+        if (value instanceof java.time.LocalDate date) return date.format(DATE);
         if (value instanceof BigDecimal decimal) return money(decimal);
         return value.toString();
     }
