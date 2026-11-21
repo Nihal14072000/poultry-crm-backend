@@ -30,7 +30,7 @@ public class ReportDataService {
             case OUTSTANDING -> outstanding(job.toDate(), partyId);
             case DELIVERIES -> deliveries(job.fromDate(), job.toDate(), tripId, partyId);
         };
-        List<String> columns = rows.isEmpty() ? defaultColumns(job.reportType()) : List.copyOf(rows.getFirst().keySet());
+        List<String> columns = rows.isEmpty() ? defaultColumns(job.reportType()) : List.copyOf(rows.get(0).keySet());
         BigDecimal amount = rows.stream().map(r -> decimal(r.get("amount") != null ? r.get("amount") : r.get("outstanding_amount")))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal quantity = rows.stream().map(r -> decimal(r.get("quantity") != null ? r.get("quantity") : r.get("qty")))
