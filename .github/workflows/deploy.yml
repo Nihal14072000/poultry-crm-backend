@@ -116,6 +116,8 @@ jobs:
             --spring.config.additional-location=file:/home/ubuntu/poultry-crm-backend/target/application.yaml \
             --server.address=0.0.0.0 \
             --server.port=1111 \
+            --management.endpoints.web.exposure.include=health \
+            --management.endpoint.health.show-details=never \
             > "$DEPLOY_PATH/app.log" 2>&1 < /dev/null &
 
           echo $! > "$DEPLOY_PATH/app.pid"
