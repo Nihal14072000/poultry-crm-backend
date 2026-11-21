@@ -12,3 +12,8 @@ spring:
       hibernate:
         default_schema: demo
     open-in-view: false
+
+reports:
+  storage-dir: ${REPORT_STORAGE_DIR:./storage/reports}
+  worker:
+    poll-interval-ms: ${REPORT_WORKER_POLL_INTERVAL_MS:3000}
