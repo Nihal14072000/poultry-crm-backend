@@ -24,6 +24,7 @@ public class ReportWorker {
 
     @Scheduled(fixedDelayString = "${reports.worker.poll-interval-ms:3000}")
     public void processNext() {
+        jobs.requeueStaleProcessing();
         jobs.claimNext().ifPresent(this::process);
     }
 
