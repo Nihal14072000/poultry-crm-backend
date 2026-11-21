@@ -19,7 +19,7 @@ public class FinanceReceivablesRepository {
                               where p.payment_type = 'BUYER_RECEIPT'
                                 and p.status = 'COMPLETED'
                                 and p.isactive is true
-                                and p.isdeleted is false
+                                and p.isdeleted is not true
                                 and (cast(:buyingPartyId as integer) is null or p.buying_party_id = :buyingPartyId)), 0) as total_received,
                     coalesce((select sum(coalesce(o.weight, 0) * coalesce(o.rate, 0))
                               from demo."order" o
@@ -39,7 +39,7 @@ public class FinanceReceivablesRepository {
                               where p.payment_type = 'SELLER_PAYOUT'
                                 and p.status = 'COMPLETED'
                                 and p.isactive is true
-                                and p.isdeleted is false
+                                and p.isdeleted is not true
                                 and (cast(:sellingPartyId as integer) is null or p.selling_party_id = :sellingPartyId)), 0) as total_paid,
                     coalesce((select sum(coalesce(o.total, coalesce(o.weight, 0) * coalesce(o.rate, 0)))
                               from demo."order" o
