@@ -33,10 +33,10 @@ class FinanceServiceTest {
         var allocations = mock(FinancePaymentAllocationRepository.class);
         var payments = mock(PaymentRepository.class);
         var payment = new Payment();
-        payment.setId(1); payment.setPaymentType("BUYER_RECEIPT"); payment.setBuyingPartyId(2);
+        payment.setId(1); payment.setPaymentType("BUYER_RECEIPT"); payment.setSellingPartyId(2);
         payment.setAmount(BigDecimal.TEN); payment.setStatus("COMPLETED");
         var settlement = new FinanceOrderSettlement();
-        settlement.setId(3); settlement.setBuyingPartyId(2); settlement.setBuyerDueAmount(BigDecimal.TEN);
+        settlement.setId(3); settlement.setSellingPartyId(2); settlement.setBuyerDueAmount(BigDecimal.TEN);
         when(payments.findById(1)).thenReturn(Optional.of(payment));
         when(settlements.findById(3)).thenReturn(Optional.of(settlement));
         when(allocations.sumAllocatedForPayment(1)).thenReturn(BigDecimal.ZERO);
@@ -59,7 +59,7 @@ class FinanceServiceTest {
         var savedTrip = new Trip(); savedTrip.setTripId(7);
         when(tripRepository.save(any())).thenReturn(savedTrip);
         when(relations.findActiveByTripId(7)).thenReturn(java.util.List.of());
-        var payment = new Payment(); payment.setPaymentType("BUYER_RECEIPT"); payment.setBuyingPartyId(2); payment.setAmount(BigDecimal.ONE); payment.setStatus("COMPLETED");
+        var payment = new Payment(); payment.setPaymentType("SELLER_PAYOUT"); payment.setBuyingPartyId(2); payment.setAmount(BigDecimal.ONE); payment.setStatus("COMPLETED");
         var expense = new Expenses(); expense.setAmount(BigDecimal.ONE); expense.setExpenseDate(java.time.LocalDate.now()); expense.setCategory("Fuel");
         var request = new TripRetrieveResponse(); request.setPayments(java.util.List.of(payment)); request.setExpenses(java.util.List.of(expense));
         var service = new TripService(tripRepository, mock(VehicleService.class), mock(DriverService.class), mock(SupervisorService.class), mock(EmployeeService.class), mock(BuyingPartyService.class), mock(SellingPartyService.class), relations, mock(PartyOrderRelationService.class), paymentService, expensesService);

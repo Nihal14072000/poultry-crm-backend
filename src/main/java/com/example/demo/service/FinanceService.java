@@ -56,8 +56,8 @@ public class FinanceService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Payment type is not allocatable");
         allocation.setAllocationType(type);
         boolean partyMatches = "BUYER_RECEIPT".equals(type)
-                ? payment.getBuyingPartyId() != null && payment.getBuyingPartyId().equals(settlement.getBuyingPartyId())
-                : payment.getSellingPartyId() != null && payment.getSellingPartyId().equals(settlement.getSellingPartyId());
+                ? payment.getSellingPartyId() != null && payment.getSellingPartyId().equals(settlement.getSellingPartyId())
+                : payment.getBuyingPartyId() != null && payment.getBuyingPartyId().equals(settlement.getBuyingPartyId());
         if (!partyMatches) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Payment party does not match settlement");
         if (payment.getStatus() == null || !"COMPLETED".equals(payment.getStatus()))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only completed payments can be allocated");

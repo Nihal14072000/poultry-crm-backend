@@ -238,10 +238,11 @@ public class PaymentService extends CrudService<Payment> {
         boolean hasSellingParty = payment.getSellingPartyId() != null;
         if (hasBuyingParty && hasSellingParty)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Payment must reference only one party");
+        // Buying parties are suppliers we pay; selling parties are vendors who pay us.
         if (hasBuyingParty) {
-            payment.setPaymentType("BUYER_RECEIPT");
-        } else if (hasSellingParty) {
             payment.setPaymentType("SELLER_PAYOUT");
+        } else if (hasSellingParty) {
+            payment.setPaymentType("BUYER_RECEIPT");
         } else if (payment.getPaymentType() == null) {
             return; // Allows legacy payment records.
         }
@@ -251,8 +252,8 @@ public class PaymentService extends CrudService<Payment> {
         if (!buyer && !seller) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported payment type");
         if (payment.getAmount() == null || payment.getAmount().signum() <= 0)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Payment amount must be positive");
-        if (buyer && (payment.getBuyingPartyId() == null || payment.getSellingPartyId() != null)
-                || seller && (payment.getSellingPartyId() == null || payment.getBuyingPartyId() != null))
+        if (buyer && (payment.getSellingPartyId() == null || payment.getBuyingPartyId() != null)
+                || seller && (payment.getBuyingPartyId() == null || payment.getSellingPartyId() != null))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Payment must reference only the party for its type");
         if (payment.getStatus() != null && !java.util.List.of("PENDING", "COMPLETED", "FAILED", "VOID").contains(payment.getStatus()))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported payment status");
