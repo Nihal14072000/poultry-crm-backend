@@ -39,6 +39,8 @@ public class BuyingParty implements ActiveRecord, AuditableRecord {
     private Integer createdBy;
     @Column(name = "updated_by")
     private Integer updatedBy;
+    @Column(name = "outstanding")
+    private Integer outstanding;
 
     @Override
     public LocalDateTime getCreatedAtForSort() {

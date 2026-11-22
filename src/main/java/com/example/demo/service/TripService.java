@@ -235,6 +235,7 @@ public class TripService extends CrudService<Trip> {
             party.setName(request.getName());
             party.setContact(request.getContact());
             party.setLocation(request.getLocation());
+            party.setOutstanding(request.getOutstanding());
             return buyingPartyService.create(party);
         }
 
@@ -244,6 +245,7 @@ public class TripService extends CrudService<Trip> {
         if (request.getName() != null) party.setName(request.getName());
         if (request.getContact() != null) party.setContact(request.getContact());
         if (request.getLocation() != null) party.setLocation(request.getLocation());
+        if (request.getOutstanding() != null) party.setOutstanding(request.getOutstanding());
         return buyingPartyService.update(request.getId(), party)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Buying party not found: " + request.getId()));
@@ -255,6 +257,7 @@ public class TripService extends CrudService<Trip> {
             party.setName(request.getName());
             party.setContact(request.getContact());
             party.setLocation(request.getLocation());
+            party.setOutstanding(request.getOutstanding());
             return sellingPartyService.create(party);
         }
 
@@ -264,6 +267,7 @@ public class TripService extends CrudService<Trip> {
         if (request.getName() != null) party.setName(request.getName());
         if (request.getContact() != null) party.setContact(request.getContact());
         if (request.getLocation() != null) party.setLocation(request.getLocation());
+        if (request.getOutstanding() != null) party.setOutstanding(request.getOutstanding());
         return sellingPartyService.update(request.getId(), party)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Selling party not found: " + request.getId()));
@@ -305,6 +309,7 @@ public class TripService extends CrudService<Trip> {
                 .name(party.getName())
                 .contact(party.getContact())
                 .location(party.getLocation())
+                .outstanding(party.getOutstanding())
                 .order(partyOrderRelationService.findActiveOrders(
                         tripId, party.getId(), BUYING_PARTY_TYPE))
                 .isActive(party.getIsActive())
@@ -325,6 +330,7 @@ public class TripService extends CrudService<Trip> {
                 .name(party.getName())
                 .contact(party.getContact())
                 .location(party.getLocation())
+                .outstanding(party.getOutstanding())
                 .order(partyOrderRelationService.findActiveOrders(
                         tripId, party.getId(), SELLING_PARTY_TYPE))
                 .isActive(party.getIsActive())
