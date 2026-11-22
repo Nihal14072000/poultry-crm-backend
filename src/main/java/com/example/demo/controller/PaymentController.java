@@ -1,9 +1,11 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.PaymentRetrieveResponse;
+import com.example.demo.dto.PaymentSumResponse;
 import com.example.demo.dto.PaymentWriteRequest;
 import com.example.demo.entity.Payment;
 import com.example.demo.service.PaymentService;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -13,9 +15,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/payments")
@@ -32,8 +36,28 @@ public class PaymentController {
     }
 
     @GetMapping("/retrieve")
-    public List<PaymentRetrieveResponse> retrieveAll() {
-        return service.retrieveAll();
+    public ResponseEntity<List<PaymentRetrieveResponse>> retrieveAll(
+            @RequestParam(required = false) Integer partyId,
+            @RequestParam(required = false) String partyTyp
+    ) {
+        if (partyId == null && partyTyp == null) {
+            return ResponseEntity.ok(service.retrieveAll());
+        }
+        if (partyId == null || partyId <= 0
+                || !("B".equals(partyTyp) || "S".equals(partyTyp))) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(service.retrieveByParty(partyId, partyTyp));
+    }
+
+    @GetMapping("/party/sum")
+    public PaymentSumResponse sumCompletedPaymentsByParty(
+            @RequestParam Integer partyId,
+            @RequestParam String partyType,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate
+    ) {
+        return service.sumCompletedPaymentsByParty(partyId, partyType, startDate, endDate);
     }
 
     @GetMapping("/trip/{tripId}/retrieve")

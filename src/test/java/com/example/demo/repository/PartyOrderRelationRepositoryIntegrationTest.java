@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,6 +26,9 @@ class PartyOrderRelationRepositoryIntegrationTest {
 
     @Autowired
     private PartyOrderRelationRepository repository;
+
+    @Autowired
+    private OrderRepository orderRepository;
 
     @Autowired
     private EntityManager entityManager;
@@ -70,6 +74,31 @@ class PartyOrderRelationRepositoryIntegrationTest {
         assertThat(repository.findByPartyIdAndPartyType(35, "VENDOR_DELIVERY"))
                 .extracting(PartyOrderRelation::getRelationId)
                 .containsExactly(deliveryRelation.getRelationId());
+    }
+
+    @Test
+    void sumsActiveOrderWeightTimesRateForTheRequestedPartyAndType() {
+        Order matchingOrder = persistOrder(null);
+        matchingOrder.setWeight(new BigDecimal("12.50"));
+        matchingOrder.setRate(new BigDecimal("4.00"));
+        entityManager.merge(matchingOrder);
+
+        Order otherPartyOrder = persistOrder(null);
+        otherPartyOrder.setWeight(new BigDecimal("100.00"));
+        otherPartyOrder.setRate(new BigDecimal("10.00"));
+        entityManager.merge(otherPartyOrder);
+
+        persistRelation(25, "SUPPLIER_PICKUP", matchingOrder.getId());
+        persistRelation(26, "SUPPLIER_PICKUP", otherPartyOrder.getId());
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(orderRepository.sumActiveOrderWeightTimesRateByPartyIdAndPartyType(
+                25, "SUPPLIER_PICKUP"
+        )).isEqualByComparingTo("50.00");
+        assertThat(orderRepository.sumActiveOrderWeightTimesRateByPartyIdAndPartyType(
+                99, "SUPPLIER_PICKUP"
+        )).isEqualByComparingTo("0");
     }
 
     private Order persistOrder(Integer tripId) {

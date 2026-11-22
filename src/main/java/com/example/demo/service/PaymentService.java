@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import com.example.demo.dto.PaymentRetrieveResponse;
 import com.example.demo.dto.BuyingPartydto;
+import com.example.demo.dto.PaymentSumResponse;
 import com.example.demo.dto.SellingPartydto;
 import com.example.demo.dto.TripRetrieveResponse;
 import com.example.demo.entity.BuyingParty;
@@ -30,6 +31,8 @@ import org.springframework.http.HttpStatus;
 
 import java.util.List;
 import java.util.Optional;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Slf4j
 @Service
@@ -76,6 +79,53 @@ public class PaymentService extends CrudService<Payment> {
         return findAll().stream()
                 .map(this::toRetrieveResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<PaymentRetrieveResponse> retrieveByParty(Integer partyId, String partyTyp) {
+        List<Payment> payments;
+        if ("B".equals(partyTyp)) {
+            payments = repository.findByBuyingPartyId(partyId);
+        } else if ("S".equals(partyTyp)) {
+            payments = repository.findBySellingPartyId(partyId);
+        } else {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported party type");
+        }
+
+        payments = CreatedRecord.newestFirst(payments.stream()
+                .filter(ActiveRecord::isActiveRecord)
+                .toList());
+        log.info("Retrieved {} active payments for partyId={}, partyTyp={}",
+                payments.size(), partyId, partyTyp);
+        return payments.stream().map(this::toRetrieveResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PaymentSumResponse sumCompletedPaymentsByParty(
+            Integer partyId,
+            String partyType,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+        if (partyId == null || partyId <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Party ID must be positive");
+        }
+        if (!"B".equals(partyType) && !"S".equals(partyType)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported party type");
+        }
+        if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid payment date range");
+        }
+
+        BigDecimal total = repository.sumCompletedPaymentsByParty(
+                partyId, partyType, startDate, endDate);
+        return new PaymentSumResponse(
+                partyId,
+                partyType,
+                startDate,
+                endDate,
+                total == null ? BigDecimal.ZERO : total
+        );
     }
 
     @Transactional(readOnly = true)
