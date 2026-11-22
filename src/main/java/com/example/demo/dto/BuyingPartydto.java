@@ -23,6 +23,8 @@ public class BuyingPartydto {
 
     private String location;
 
+    private Integer outstanding;
+
     private List<Order> order;
 
     private Boolean isActive = true;
