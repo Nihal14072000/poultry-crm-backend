@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -43,6 +44,26 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             order by case when o.createDate is null then 1 else 0 end, o.createDate desc
             """)
     List<Order> findActiveByPartyIdAndPartyType(
+            @Param("partyId") Integer partyId,
+            @Param("partyType") String partyType
+    );
+
+    @Query("""
+            select coalesce(sum(coalesce(o.weight, 0) * coalesce(o.rate, 0)), 0)
+            from Order o
+            where o.isActive = true
+              and o.isDeleted = false
+              and exists (
+                  select relation.relationId
+                  from PartyOrderRelation relation
+                  where relation.orderId = o.id
+                    and relation.partyId = :partyId
+                    and relation.partyType = :partyType
+                    and relation.isActive = true
+                    and relation.isDeleted = false
+              )
+            """)
+    BigDecimal sumActiveOrderWeightTimesRateByPartyIdAndPartyType(
             @Param("partyId") Integer partyId,
             @Param("partyType") String partyType
     );

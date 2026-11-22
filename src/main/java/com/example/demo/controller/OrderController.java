@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -53,6 +55,19 @@ public class OrderController {
         return ResponseEntity.ok(service.findActiveByPartyIdAndPartyType(
                 partyId, partyType, startDate, endDate
         ));
+    }
+
+    @GetMapping("/total")
+    public ResponseEntity<BigDecimal> getPartyOrderTotal(
+            @RequestParam Integer partyId,
+            @RequestParam String partyType
+    ) {
+        if (partyId <= 0 || partyType.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(
+                service.sumActiveOrderWeightTimesRateByPartyIdAndPartyType(partyId, partyType).setScale(0, RoundingMode.HALF_UP)
+        );
     }
 
     @GetMapping("/{id}")

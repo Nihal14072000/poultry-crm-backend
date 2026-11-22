@@ -5,6 +5,7 @@ import com.example.demo.repository.OrderRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -29,6 +30,13 @@ public class OrderService extends CrudService<Order> {
 
     public List<Order> findActiveByPartyIdAndPartyType(Integer partyId, String partyType) {
         return repository.findActiveByPartyIdAndPartyType(partyId, partyType);
+    }
+
+    public BigDecimal sumActiveOrderWeightTimesRateByPartyIdAndPartyType(
+            Integer partyId,
+            String partyType
+    ) {
+        return repository.sumActiveOrderWeightTimesRateByPartyIdAndPartyType(partyId, partyType);
     }
 
     public List<Order> findActiveByPartyIdAndPartyType(
