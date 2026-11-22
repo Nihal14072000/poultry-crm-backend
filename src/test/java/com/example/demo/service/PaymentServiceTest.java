@@ -23,25 +23,25 @@ class PaymentServiceTest {
             repository, null, null, null, null, null, null, null, null, null);
 
     @Test
-    void buyingPartyIdSetsBuyerReceiptType() {
+    void buyingPartyIdSetsSellerPayoutType() {
         var payment = payment();
         payment.setBuyingPartyId(1);
         payment.setPaymentType("SELLER_PAYOUT");
 
         service.create(payment);
 
-        assertEquals("BUYER_RECEIPT", payment.getPaymentType());
+        assertEquals("SELLER_PAYOUT", payment.getPaymentType());
     }
 
     @Test
-    void sellingPartyIdSetsSellerPayoutType() {
+    void sellingPartyIdSetsBuyerReceiptType() {
         var payment = payment();
         payment.setSellingPartyId(1);
         payment.setPaymentType("BUYER_RECEIPT");
 
         service.create(payment);
 
-        assertEquals("SELLER_PAYOUT", payment.getPaymentType());
+        assertEquals("BUYER_RECEIPT", payment.getPaymentType());
     }
 
     @Test
