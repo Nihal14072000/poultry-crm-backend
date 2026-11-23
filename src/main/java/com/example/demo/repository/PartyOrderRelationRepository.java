@@ -6,8 +6,22 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Collection;
 
 public interface PartyOrderRelationRepository extends JpaRepository<PartyOrderRelation, Integer> {
+    @Query("""
+            select relation
+            from PartyOrderRelation relation
+            where relation.partyId in :partyIds
+              and relation.partyType = :partyType
+              and relation.isActive = true
+              and relation.isDeleted = false
+            """)
+    List<PartyOrderRelation> findActiveByPartyIdsAndPartyType(
+            @Param("partyIds") Collection<Integer> partyIds,
+            @Param("partyType") String partyType
+    );
+
     List<PartyOrderRelation> findByPartyIdAndPartyType(Integer partyId, String partyType);
 
     @Query("""

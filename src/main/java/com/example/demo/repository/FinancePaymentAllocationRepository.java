@@ -7,9 +7,11 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Collection;
 
 public interface FinancePaymentAllocationRepository extends JpaRepository<FinancePaymentAllocation, Integer> {
     List<FinancePaymentAllocation> findByPaymentId(Integer paymentId);
+    List<FinancePaymentAllocation> findByPaymentIdIn(Collection<Integer> paymentIds);
 
     @Modifying
     @Query("""

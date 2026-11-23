@@ -12,6 +12,15 @@ import java.util.List;
 
 public interface PaymentRepository extends JpaRepository<Payment, Integer> {
     List<Payment> findByTripId(Integer tripId);
+
+    @Query("""
+            select p from Payment p
+            where p.tripId = :tripId
+              and p.isActive = true
+              and p.isDeleted = false
+            order by case when p.createDate is null then 1 else 0 end, p.createDate desc
+            """)
+    List<Payment> findActiveByTripIdOrderByCreateDateDesc(@Param("tripId") Integer tripId);
     List<Payment> findByBuyingPartyId(Integer buyingPartyId);
     List<Payment> findBySellingPartyId(Integer sellingPartyId);
 
