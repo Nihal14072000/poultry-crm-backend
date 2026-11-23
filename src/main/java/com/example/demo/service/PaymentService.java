@@ -35,13 +35,10 @@ import org.springframework.http.HttpStatus;
 import java.util.List;
 import java.util.Optional;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -160,11 +157,11 @@ public class PaymentService extends CrudService<Payment> {
         Set<Integer> buyingPartyIds = payments.stream()
                 .map(Payment::getBuyingPartyId)
                 .filter(java.util.Objects::nonNull)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(java.util.HashSet::new));
         Set<Integer> sellingPartyIds = payments.stream()
                 .map(Payment::getSellingPartyId)
                 .filter(java.util.Objects::nonNull)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(java.util.HashSet::new));
         tripRelations.stream()
                 .filter(relation -> "B".equals(relation.getPartyType()))
                 .map(TripPartyRelation::getPartyId)
@@ -199,7 +196,7 @@ public class PaymentService extends CrudService<Payment> {
         Set<Integer> orderIds = payments.stream()
                 .map(Payment::getActualOrderId)
                 .filter(java.util.Objects::nonNull)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(java.util.HashSet::new));
         buyingOrderRelations.stream().map(PartyOrderRelation::getOrderId).forEach(orderIds::add);
         sellingOrderRelations.stream().map(PartyOrderRelation::getOrderId).forEach(orderIds::add);
 
