@@ -11,6 +11,8 @@ import com.example.demo.entity.CreatedRecord;
 import com.example.demo.entity.Employee;
 import com.example.demo.entity.Order;
 import com.example.demo.entity.Payment;
+import com.example.demo.entity.PartyOrderRelation;
+import com.example.demo.entity.TripPartyRelation;
 import com.example.demo.entity.SellingParty;
 import com.example.demo.entity.Trip;
 import com.example.demo.repository.BuyingPartyRepository;
@@ -18,6 +20,7 @@ import com.example.demo.repository.EmployeeRepository;
 import com.example.demo.repository.FinancePaymentAllocationRepository;
 import com.example.demo.repository.OrderRepository;
 import com.example.demo.repository.PaymentRepository;
+import com.example.demo.repository.PartyOrderRelationRepository;
 import com.example.demo.repository.SellingPartyRepository;
 import com.example.demo.repository.TripRepository;
 import com.example.demo.repository.VehicleRepository;
@@ -31,6 +34,12 @@ import org.springframework.http.HttpStatus;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -39,6 +48,7 @@ import java.time.LocalDate;
 public class PaymentService extends CrudService<Payment> {
     private static final Logger log = LoggerFactory.getLogger(PaymentService.class);
     private final PaymentRepository repository;
+    private final PartyOrderRelationRepository partyOrderRelationRepository;
     private final BuyingPartyRepository buyingPartyRepository;
     private final OrderRepository orderRepository;
     private final TripRepository tripRepository;
@@ -51,6 +61,7 @@ public class PaymentService extends CrudService<Payment> {
 
     public PaymentService(
             PaymentRepository repository,
+            PartyOrderRelationRepository partyOrderRelationRepository,
             BuyingPartyRepository buyingPartyRepository,
             OrderRepository orderRepository,
             TripRepository tripRepository,
@@ -63,6 +74,7 @@ public class PaymentService extends CrudService<Payment> {
     ) {
         super(repository, Payment::setId);
         this.repository = repository;
+        this.partyOrderRelationRepository = partyOrderRelationRepository;
         this.buyingPartyRepository = buyingPartyRepository;
         this.orderRepository = orderRepository;
         this.tripRepository = tripRepository;
@@ -130,11 +142,204 @@ public class PaymentService extends CrudService<Payment> {
 
     @Transactional(readOnly = true)
     public List<PaymentRetrieveResponse> retrieveByTripId(Integer tripId) {
-        List<Payment> payments = CreatedRecord.newestFirst(repository.findByTripId(tripId).stream()
-                .filter(ActiveRecord::isActiveRecord)
-                .toList());
+        List<Payment> payments = repository.findActiveByTripIdOrderByCreateDateDesc(tripId);
+        if (payments.isEmpty()) {
+            log.info("Retrieved 0 active payments for tripId={}", tripId);
+            return List.of();
+        }
+
+        // Load the trip graph once, rather than rebuilding it for every payment.
+        Trip trip = tripRepository.findById(tripId).orElse(null);
+        List<TripPartyRelation> tripRelations = trip == null
+                ? List.of()
+                : tripPartyRelationService.findActiveByTripId(tripId);
+
+        Set<Integer> buyingPartyIds = payments.stream()
+                .map(Payment::getBuyingPartyId)
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toCollection(java.util.HashSet::new));
+        Set<Integer> sellingPartyIds = payments.stream()
+                .map(Payment::getSellingPartyId)
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toCollection(java.util.HashSet::new));
+        tripRelations.stream()
+                .filter(relation -> "B".equals(relation.getPartyType()))
+                .map(TripPartyRelation::getPartyId)
+                .forEach(buyingPartyIds::add);
+        tripRelations.stream()
+                .filter(relation -> "S".equals(relation.getPartyType()))
+                .map(TripPartyRelation::getPartyId)
+                .forEach(sellingPartyIds::add);
+
+        Map<Integer, BuyingParty> buyingParties = new HashMap<>();
+        if (!buyingPartyIds.isEmpty()) {
+            new ArrayList<>(buyingPartyRepository.findAllById(buyingPartyIds)).stream()
+                    .filter(ActiveRecord::isActiveRecord)
+                    .forEach(party -> buyingParties.put(party.getId(), party));
+        }
+        Map<Integer, SellingParty> sellingParties = new HashMap<>();
+        if (!sellingPartyIds.isEmpty()) {
+            new ArrayList<>(sellingPartyRepository.findAllById(sellingPartyIds)).stream()
+                    .filter(ActiveRecord::isActiveRecord)
+                    .forEach(party -> sellingParties.put(party.getId(), party));
+        }
+
+        List<PartyOrderRelation> buyingOrderRelations = buyingPartyIds.isEmpty()
+                ? List.of()
+                : partyOrderRelationRepository.findActiveByPartyIdsAndPartyType(
+                        buyingPartyIds, "B");
+        List<PartyOrderRelation> sellingOrderRelations = sellingPartyIds.isEmpty()
+                ? List.of()
+                : partyOrderRelationRepository.findActiveByPartyIdsAndPartyType(
+                        sellingPartyIds, "S");
+
+        Set<Integer> orderIds = payments.stream()
+                .map(Payment::getActualOrderId)
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toCollection(java.util.HashSet::new));
+        buyingOrderRelations.stream().map(PartyOrderRelation::getOrderId).forEach(orderIds::add);
+        sellingOrderRelations.stream().map(PartyOrderRelation::getOrderId).forEach(orderIds::add);
+
+        Map<Integer, Order> ordersById = new HashMap<>();
+        if (!orderIds.isEmpty()) {
+            new ArrayList<>(orderRepository.findAllById(orderIds)).stream()
+                    .filter(ActiveRecord::isActiveRecord)
+                    .forEach(order -> ordersById.put(order.getId(), order));
+        }
+        Map<Integer, List<Order>> buyingOrdersByParty = groupActiveOrdersByParty(
+                buyingOrderRelations, ordersById);
+        Map<Integer, List<Order>> sellingOrdersByParty = groupActiveOrdersByParty(
+                sellingOrderRelations, ordersById);
+
+        TripRetrieveResponse tripResponse = trip == null ? null
+                : toTripRetrieveResponse(trip, tripRelations, buyingParties, sellingParties,
+                        buyingOrdersByParty, sellingOrdersByParty);
+
+        Set<Integer> paymentIds = payments.stream().map(Payment::getId).collect(Collectors.toSet());
+        Map<Integer, List<com.example.demo.entity.FinancePaymentAllocation>> allocationsByPayment =
+                allocationRepository.findByPaymentIdIn(paymentIds).stream()
+                        .collect(Collectors.groupingBy(
+                                com.example.demo.entity.FinancePaymentAllocation::getPaymentId));
+
         log.info("Retrieved {} active payments for tripId={}", payments.size(), tripId);
-        return payments.stream().map(this::toRetrieveResponse).toList();
+        return payments.stream().map(payment -> PaymentRetrieveResponse.from(
+                payment,
+                payment.getBuyingPartyId() == null ? null
+                        : toBuyingPartyDto(buyingParties.get(payment.getBuyingPartyId()),
+                                buyingOrdersByParty.getOrDefault(payment.getBuyingPartyId(), List.of())),
+                payment.getActualOrderId() == null ? null : ordersById.get(payment.getActualOrderId()),
+                tripResponse,
+                payment.getSellingPartyId() == null ? null
+                        : toSellingPartyDto(sellingParties.get(payment.getSellingPartyId()),
+                                sellingOrdersByParty.getOrDefault(payment.getSellingPartyId(), List.of())),
+                allocationsByPayment.getOrDefault(payment.getId(), List.of())
+        )).toList();
+    }
+
+    private Map<Integer, List<Order>> groupActiveOrdersByParty(
+            List<PartyOrderRelation> relations,
+            Map<Integer, Order> ordersById
+    ) {
+        Map<Integer, Map<Integer, Order>> grouped = new HashMap<>();
+        for (PartyOrderRelation relation : relations) {
+            Order order = ordersById.get(relation.getOrderId());
+            if (order != null) {
+                grouped.computeIfAbsent(relation.getPartyId(), ignored -> new LinkedHashMap<>())
+                        .putIfAbsent(order.getId(), order);
+            }
+        }
+        Map<Integer, List<Order>> result = new HashMap<>();
+        grouped.forEach((partyId, orders) -> result.put(
+                partyId,
+                CreatedRecord.newestFirst(new ArrayList<>(orders.values()))
+        ));
+        return result;
+    }
+
+    private TripRetrieveResponse toTripRetrieveResponse(
+            Trip trip,
+            List<TripPartyRelation> relations,
+            Map<Integer, BuyingParty> buyingParties,
+            Map<Integer, SellingParty> sellingParties,
+            Map<Integer, List<Order>> buyingOrdersByParty,
+            Map<Integer, List<Order>> sellingOrdersByParty
+    ) {
+        return TripRetrieveResponse.builder()
+                .tripId(trip.getTripId())
+                .buyingParties(relations.stream()
+                        .filter(relation -> "B".equals(relation.getPartyType()))
+                        .map(relation -> {
+                            BuyingParty party = buyingParties.get(relation.getPartyId());
+                            if (party == null) {
+                                throw new IllegalStateException("Buying party not found for trip-party relation "
+                                        + relation.getRelationId());
+                            }
+                            return toBuyingPartyDto(party,
+                                    buyingOrdersByParty.getOrDefault(party.getId(), List.of()));
+                        })
+                        .toList())
+                .sellingParties(relations.stream()
+                        .filter(relation -> "S".equals(relation.getPartyType()))
+                        .map(relation -> {
+                            SellingParty party = sellingParties.get(relation.getPartyId());
+                            if (party == null) {
+                                throw new IllegalStateException("Selling party not found for trip-party relation "
+                                        + relation.getRelationId());
+                            }
+                            return toSellingPartyDto(party,
+                                    sellingOrdersByParty.getOrDefault(party.getId(), List.of()));
+                        })
+                        .toList())
+                .route(trip.getRoute())
+                .date(trip.getDate())
+                .pickupId(trip.getPickupId())
+                .dropId(trip.getDropId())
+                .status(trip.getStatus())
+                .createDate(trip.getCreateDate())
+                .updatedDate(trip.getUpdatedDate())
+                .createdBy(trip.getCreatedBy())
+                .updatedBy(trip.getUpdatedBy())
+                .build();
+    }
+
+    private BuyingPartydto toBuyingPartyDto(BuyingParty party, List<Order> orders) {
+        if (party == null) {
+            return null;
+        }
+        return BuyingPartydto.builder()
+                .id(party.getId())
+                .name(party.getName())
+                .contact(party.getContact())
+                .location(party.getLocation())
+                .outstanding(party.getOutstanding())
+                .order(orders)
+                .isActive(party.getIsActive())
+                .isDeleted(party.getIsDeleted())
+                .createDate(party.getCreateDate())
+                .updatedDate(party.getUpdatedDate())
+                .createdBy(party.getCreatedBy())
+                .updatedBy(party.getUpdatedBy())
+                .build();
+    }
+
+    private SellingPartydto toSellingPartyDto(SellingParty party, List<Order> orders) {
+        if (party == null) {
+            return null;
+        }
+        return SellingPartydto.builder()
+                .id(party.getId())
+                .name(party.getName())
+                .contact(party.getContact())
+                .location(party.getLocation())
+                .outstanding(party.getOutstanding())
+                .order(orders)
+                .isActive(party.getIsActive())
+                .isDeleted(party.getIsDeleted())
+                .createDate(party.getCreateDate())
+                .updatedDate(party.getUpdatedDate())
+                .createdBy(party.getCreatedBy())
+                .updatedBy(party.getUpdatedBy())
+                .build();
     }
 
     @Transactional(readOnly = true)
