@@ -29,6 +29,15 @@ public class ExpensesController {
         return service.findAll();
     }
 
+    /**
+     * Returns only active, non-deleted expenses belonging to the requested trip.
+     * Filtering is performed by the database, not by the client.
+     */
+    @GetMapping("/trip/{tripId}")
+    public List<Expenses> findByTripId(@PathVariable Integer tripId) {
+        return service.findByTripId(tripId);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Expenses> findById(@PathVariable Integer id) {
         return service.findById(id).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
