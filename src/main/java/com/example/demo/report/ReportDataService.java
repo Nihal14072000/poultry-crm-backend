@@ -52,8 +52,8 @@ public class ReportDataService {
                   join demo."order" o on o.id = por.order_id and o.isactive is true and o.isdeleted is false
                  where vd.isactive is true and vd.isdeleted is false
                    and coalesce(vd.create_date::date, o.createdate::date) between :fromDate and :toDate
-                   and (:tripId is null or o.trip_id = :tripId)
-                   and (:partyId is null or vd.selling_party_id = :partyId)
+                   and (cast(:tripId as integer) is null or o.trip_id = :tripId)
+                   and (cast(:partyId as integer) is null or vd.selling_party_id = :partyId)
                    and exists (select 1 from demo.delievery_party_relation dpr
                                join demo.delievery d on d.id = dpr.delivery_id and d.isactive is true and d.isdeleted is false
                                where dpr.party_id = vd.id and dpr.party_type = 'VENDOR_DELIVERY'
@@ -73,8 +73,8 @@ public class ReportDataService {
                   join demo."order" o on o.id = sp.actual_order_id and o.isactive is true and o.isdeleted is false
                  where sp.isactive is true and sp.isdeleted is false
                    and coalesce(sp.created_ate::date, o.createdate::date) between :fromDate and :toDate
-                   and (:tripId is null or o.trip_id = :tripId)
-                   and (:partyId is null or sp.buying_party_id = :partyId)
+                   and (cast(:tripId as integer) is null or o.trip_id = :tripId)
+                   and (cast(:partyId as integer) is null or sp.buying_party_id = :partyId)
                  order by report_date, sp.id
                 """, from, to, tripId, partyId, null, null);
     }
@@ -90,10 +90,10 @@ public class ReportDataService {
                   left join demo.selling_party sp on sp.id = p.selling_party_id
                  where p.isactive is true and p.isdeleted is false
                    and p.payment_date between :fromDate and :toDate
-                   and (:tripId is null or p.trip_id = :tripId)
-                   and (:partyId is null or p.buying_party_id = :partyId or p.selling_party_id = :partyId)
-                   and (:paymentType is null or p.payment_type = :paymentType)
-                   and (:status is null or p.status = :status)
+                   and (cast(:tripId as integer) is null or p.trip_id = :tripId)
+                   and (cast(:partyId as integer) is null or p.buying_party_id = :partyId or p.selling_party_id = :partyId)
+                   and (cast(:paymentType as varchar) is null or p.payment_type = :paymentType)
+                   and (cast(:status as varchar) is null or p.status = :status)
                  order by p.payment_date, p.id
                 """, from, to, tripId, partyId, paymentType, status);
     }
@@ -115,7 +115,7 @@ public class ReportDataService {
                          and p.payment_date <= :toDate
                   ) paid on true
                  where s.status <> 'VOID' and s.settlement_date <= :toDate
-                   and (:partyId is null or s.buying_party_id = :partyId)
+                   and (cast(:partyId as integer) is null or s.buying_party_id = :partyId)
                 union all
                 select 'PAYABLE' as balance_type, s.id as settlement_id, s.trip_id,
                        sp.name as party_name, s.settlement_date as report_date,
@@ -132,7 +132,7 @@ public class ReportDataService {
                          and p.payment_date <= :toDate
                   ) paid on true
                  where s.status <> 'VOID' and s.settlement_date <= :toDate
-                   and (:partyId is null or s.selling_party_id = :partyId)
+                   and (cast(:partyId as integer) is null or s.selling_party_id = :partyId)
                  order by report_date, settlement_id
                 """, LocalDate.of(1900, 1, 1), asOf, null, partyId, null, null);
     }
@@ -153,8 +153,8 @@ public class ReportDataService {
                   join demo."order" o on o.id = por.order_id and o.isactive is true and o.isdeleted is false
                  where d.isactive is true and d.isdeleted is false
                    and d.createdate::date between :fromDate and :toDate
-                   and (:tripId is null or o.trip_id = :tripId)
-                   and (:partyId is null or vd.selling_party_id = :partyId)
+                   and (cast(:tripId as integer) is null or o.trip_id = :tripId)
+                   and (cast(:partyId as integer) is null or vd.selling_party_id = :partyId)
                  order by report_date, d.id
                 """, from, to, tripId, partyId, null, null);
     }
