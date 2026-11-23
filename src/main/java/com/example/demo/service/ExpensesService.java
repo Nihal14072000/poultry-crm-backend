@@ -23,4 +23,9 @@ public class ExpensesService extends CrudService<Expenses> {
         }
         return repository.findByTripIdAndIsActiveTrueAndIsDeletedFalseOrderByExpenseDateDescIdDesc(tripId);
     }
+
+    @Transactional
+    public void deleteByTripId(Integer tripId) {
+        repository.deleteByTripId(tripId);
+    }
 }

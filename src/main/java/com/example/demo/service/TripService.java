@@ -133,6 +133,7 @@ public class TripService extends CrudService<Trip> {
         }
         partyOrderRelationService.deleteOrdersByTripId(id);
         paymentService.deleteByTripId(id);
+        expensesService.deleteByTripId(id);
         tripRepository.deleteById(id);
         return true;
     }
