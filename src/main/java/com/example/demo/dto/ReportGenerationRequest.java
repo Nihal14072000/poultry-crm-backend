@@ -9,8 +9,8 @@ import java.util.Map;
 
 public record ReportGenerationRequest(
         @NotNull ReportType reportType,
-        @NotNull LocalDate fromDate,
-        @NotNull LocalDate toDate,
+        LocalDate fromDate,
+        LocalDate toDate,
         @NotNull ReportFormat format,
         Map<String, Object> filters
 ) {}
