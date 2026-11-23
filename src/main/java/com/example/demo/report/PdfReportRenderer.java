@@ -54,7 +54,7 @@ public class PdfReportRenderer {
             summary.setSpacingAfter(16);
             document.add(summary);
 
-            Paragraph detailHeading = new Paragraph("Trip Summary Details".equals(data.title())
+            Paragraph detailHeading = new Paragraph(job.reportType().equals("TRIP_SUMMARY")
                     ? "Trip Activity Details" : "Detailed Records", SECTION);
             detailHeading.setSpacingAfter(7);
             document.add(detailHeading);
