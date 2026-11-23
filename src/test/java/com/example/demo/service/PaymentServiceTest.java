@@ -20,7 +20,7 @@ import java.util.List;
 class PaymentServiceTest {
     private final PaymentRepository repository = mock(PaymentRepository.class);
     private final PaymentService service = new PaymentService(
-            repository, null, null, null, null, null, null, null, null, null);
+            repository, null, null, null, null, null, null, null, null, null, null);
 
     @Test
     void buyingPartyIdSetsSellerPayoutType() {
@@ -55,7 +55,7 @@ class PaymentServiceTest {
 
     @Test
     void retrieveByTripIdReturnsEmptyWhenTripHasNoPayments() {
-        when(repository.findByTripId(42)).thenReturn(List.of());
+        when(repository.findActiveByTripIdOrderByCreateDateDesc(42)).thenReturn(List.of());
 
         assertEquals(List.of(), service.retrieveByTripId(42));
     }
