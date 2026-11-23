@@ -5,6 +5,8 @@ import com.example.demo.entity.Trip;
 import com.example.demo.dto.TripVehicleDriversResponse;
 import com.example.demo.dto.TripRetrieveResponse;
 import com.example.demo.service.TripService;
+import com.example.demo.service.TripDeliveryDetailsService;
+import com.example.demo.dto.TripDeliveryDetailsResponse;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpStatus;
@@ -26,10 +28,16 @@ import java.util.List;
 public class TripController {
     private final TripService service;
     private final ObjectMapper objectMapper;
+    private final TripDeliveryDetailsService tripDeliveryDetailsService;
 
-    public TripController(TripService service, ObjectMapper objectMapper) {
+    public TripController(
+            TripService service,
+            ObjectMapper objectMapper,
+            TripDeliveryDetailsService tripDeliveryDetailsService
+    ) {
         this.service = service;
         this.objectMapper = objectMapper;
+        this.tripDeliveryDetailsService = tripDeliveryDetailsService;
     }
 
     @GetMapping
@@ -65,6 +73,16 @@ public class TripController {
     @GetMapping("/{id}/retrieve")
     public ResponseEntity<TripRetrieveResponse> retrieve(@PathVariable Integer id) {
         return service.retrieve(id).map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{id}/delivery-details")
+    public ResponseEntity<TripDeliveryDetailsResponse> retrieveDeliveryDetails(@PathVariable Integer id) {
+        if (id == null || id <= 0) {
+            return ResponseEntity.badRequest().build();
+        }
+        return tripDeliveryDetailsService.retrieve(id)
+                .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
