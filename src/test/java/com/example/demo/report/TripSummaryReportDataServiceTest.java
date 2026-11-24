@@ -136,7 +136,7 @@ class TripSummaryReportDataServiceTest {
 
         var mortalityRow = report.rows().stream()
                 .filter(row -> "MORTALITY".equals(row.get("record_type"))).findFirst().orElseThrow();
-        assertEquals(new BigDecimal("3"), mortalityRow.get("quantity"));
+        assertEquals(3, mortalityRow.get("quantity"));
         assertEquals("Transit loss", mortalityRow.get("description"));
 
         var buyerPaymentRow = report.rows().stream()
