@@ -46,14 +46,15 @@ public class PdfReportRenderer {
             document.add(metadata);
 
             boolean tripSummary = job.reportType().equals("TRIP_SUMMARY");
-            PdfPTable summary = new PdfPTable(tripSummary ? 4 : 3);
+            PdfPTable summary = new PdfPTable(tripSummary ? 5 : 3);
             summary.setWidthPercentage(100);
-            summary.setWidths(tripSummary ? new float[]{1, 1, 1, 1} : new float[]{1, 1, 1});
+            summary.setWidths(tripSummary ? new float[]{1, 1, 1, 1, 1} : new float[]{1, 1, 1});
             if (tripSummary) {
                 addMetric(summary, "TOTAL SALES", "INR " + money(data.summaryTotals().get("SALES")));
                 addMetric(summary, "TOTAL PURCHASE", "INR " + money(data.summaryTotals().get("PURCHASE")));
                 addMetric(summary, "TOTAL EXPENSE", "INR " + money(data.summaryTotals().get("EXPENSE")));
-                addMetric(summary, "PROFIT", "INR " + money(data.summaryTotals().get("PROFIT")));
+                addMetric(summary, "ESTIMATED TRIP MARGIN", "INR " + money(data.summaryTotals().get("PROFIT")));
+                addMetric(summary, "MORTALITY (BIRDS)", quantity(data.summaryTotals().get("MORTALITY")));
             } else {
                 addMetric(summary, "RECORDS", String.valueOf(data.recordCount()));
                 addMetric(summary, "TOTAL AMOUNT", "INR " + money(data.totalAmount()));
@@ -84,6 +85,8 @@ public class PdfReportRenderer {
                 List.of("report_date", "reference_id", "party_name", "quantity", "weight", "rate", "amount"));
         addTripSection(document, "Purchase", "PURCHASE", rows,
                 List.of("report_date", "reference_id", "party_name", "quantity", "weight", "rate", "amount"));
+        addTripSection(document, "Mortality", "MORTALITY", rows,
+                List.of("report_date", "reference_id", "description", "quantity"));
         addTripSection(document, "Payments", "PAYMENT", rows,
                 List.of("report_date", "reference_id", "party_name", "description", "amount", "status"));
         addTripSection(document, "Expenses", "EXPENSE", rows,
@@ -160,6 +163,10 @@ public class PdfReportRenderer {
 
     private String money(BigDecimal value) {
         return value == null ? "0.00" : value.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString();
+    }
+
+    private String quantity(BigDecimal value) {
+        return value == null ? "0" : value.stripTrailingZeros().toPlainString();
     }
 
     private static class Footer extends PdfPageEventHelper {
