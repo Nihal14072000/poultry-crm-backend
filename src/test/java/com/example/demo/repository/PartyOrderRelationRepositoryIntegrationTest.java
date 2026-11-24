@@ -2,10 +2,13 @@ package com.example.demo.repository;
 
 import com.example.demo.entity.Order;
 import com.example.demo.entity.PartyOrderRelation;
+import com.example.demo.security.TenantContext;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import com.example.demo.config.TenantHibernateConfiguration;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -35,6 +38,35 @@ class PartyOrderRelationRepositoryIntegrationTest {
 
     @Autowired
     private EntityManager entityManager;
+
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void tenantDiscriminatorHidesRowsOwnedByAnotherOrganization() {
+        try {
+            TenantContext.setTenantId("tenant-one");
+            Order tenantOneOrder = new Order();
+            tenantOneOrder.setTripId(701);
+            orderRepository.saveAndFlush(tenantOneOrder);
+
+            TenantContext.setTenantId("tenant-two");
+            Order tenantTwoOrder = new Order();
+            tenantTwoOrder.setTripId(702);
+            orderRepository.saveAndFlush(tenantTwoOrder);
+
+            TenantContext.setTenantId("tenant-one");
+            assertThat(orderRepository.findAll())
+                    .extracting(Order::getTripId)
+                    .containsExactly(701);
+
+            TenantContext.setTenantId("tenant-two");
+            assertThat(orderRepository.findAll())
+                    .extracting(Order::getTripId)
+                    .containsExactly(702);
+        } finally {
+            TenantContext.clear();
+        }
+    }
 
     @Test
     void tripScopedLookupReturnsOnlyTheSelectedTripsProposedRelations() {

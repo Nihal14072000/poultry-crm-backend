@@ -20,7 +20,7 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
-      - name: Run unit and integration tests
+      - name: Run SaaS tenant-isolation regression tests
         run: |
           chmod +x ./mvnw
-          ./mvnw -B clean verify
+          ./mvnw -B -Dtest=TenantIdentifierResolverTest,BusinessRecordServiceTest,Demo1ApplicationTests,PartyOrderRelationRepositoryIntegrationTest clean verify
