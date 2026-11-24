@@ -5,9 +5,14 @@ import com.example.demo.dto.SupplierPickupRetrieveResponse;
 import com.example.demo.dto.TripDeliveryDetailsResponse;
 import com.example.demo.dto.TripRetrieveResponse;
 import com.example.demo.dto.VendorDeliveryRetrieveResponse;
+import com.example.demo.entity.BuyingParty;
 import com.example.demo.entity.Expenses;
+import com.example.demo.entity.Mortality;
 import com.example.demo.entity.Order;
 import com.example.demo.entity.Payment;
+import com.example.demo.entity.SellingParty;
+import com.example.demo.repository.BuyingPartyRepository;
+import com.example.demo.repository.SellingPartyRepository;
 import com.example.demo.service.TripDeliveryDetailsService;
 import org.springframework.stereotype.Service;
 
@@ -15,8 +20,12 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class TripSummaryReportDataService {
@@ -25,9 +34,15 @@ public class TripSummaryReportDataService {
             "quantity", "weight", "rate", "amount", "status");
 
     private final TripDeliveryDetailsService tripDetails;
+    private final BuyingPartyRepository buyingPartyRepository;
+    private final SellingPartyRepository sellingPartyRepository;
 
-    public TripSummaryReportDataService(TripDeliveryDetailsService tripDetails) {
+    public TripSummaryReportDataService(TripDeliveryDetailsService tripDetails,
+                                       BuyingPartyRepository buyingPartyRepository,
+                                       SellingPartyRepository sellingPartyRepository) {
         this.tripDetails = tripDetails;
+        this.buyingPartyRepository = buyingPartyRepository;
+        this.sellingPartyRepository = sellingPartyRepository;
     }
 
     public ReportData load(Integer tripId) {
@@ -39,6 +54,8 @@ public class TripSummaryReportDataService {
                 .orElseThrow(() -> new IllegalArgumentException("Trip not found: " + tripId));
         TripRetrieveResponse trip = details.getTrip();
         List<Map<String, Object>> rows = new ArrayList<>();
+        Map<Integer, String> buyerNames = loadBuyerNames(details);
+        Map<Integer, String> sellerNames = loadSellerNames(details);
 
         Map<String, Object> tripRow = row("TRIP");
         tripRow.put("report_date", trip.getDate());
@@ -55,6 +72,7 @@ public class TripSummaryReportDataService {
         BigDecimal purchases = BigDecimal.ZERO;
         BigDecimal expensesTotal = BigDecimal.ZERO;
         BigDecimal quantity = BigDecimal.ZERO;
+        BigDecimal mortalityTotal = BigDecimal.ZERO;
 
         for (DeliveryRetrieveResponse delivery : details.getDeliveries()) {
             if (delivery.getVendorDeliveries() == null) continue;
@@ -82,13 +100,25 @@ public class TripSummaryReportDataService {
             }
         }
 
+        for (Mortality mortality : details.getMortalities()) {
+            BigDecimal birds = decimal(mortality.getCombinedMortality());
+            mortalityTotal = mortalityTotal.add(birds);
+            Map<String, Object> mortalityRow = row("MORTALITY");
+            mortalityRow.put("report_date", mortality.getCreateDate() == null
+                    ? null : mortality.getCreateDate().toLocalDate());
+            mortalityRow.put("reference_id", mortality.getId());
+            mortalityRow.put("description", value(mortality.getReason()));
+            mortalityRow.put("quantity", birds);
+            rows.add(mortalityRow);
+        }
+
         for (Payment payment : details.getPayments()) {
             Map<String, Object> paymentRow = row("PAYMENT");
             paymentRow.put("report_date", payment.getPaymentDate());
             paymentRow.put("reference_id", payment.getId());
             paymentRow.put("party_name", payment.getBuyingPartyId() != null
-                    ? "Buyer #" + payment.getBuyingPartyId()
-                    : payment.getSellingPartyId() == null ? null : "Seller #" + payment.getSellingPartyId());
+                    ? partyName(buyerNames, payment.getBuyingPartyId(), "Buyer")
+                    : partyName(sellerNames, payment.getSellingPartyId(), "Seller"));
             paymentRow.put("description", String.join(" | ",
                     value(payment.getPaymentType()), value(payment.getPaymentMethod()),
                     value(payment.getExternalReference()), value(payment.getNote())));
@@ -103,8 +133,7 @@ public class TripSummaryReportDataService {
             Map<String, Object> expenseRow = row("EXPENSE");
             expenseRow.put("report_date", expense.getExpenseDate());
             expenseRow.put("reference_id", expense.getId());
-            expenseRow.put("party_name", expense.getSellingPartyId() == null
-                    ? null : "Seller #" + expense.getSellingPartyId());
+            expenseRow.put("party_name", partyName(sellerNames, expense.getSellingPartyId(), "Seller"));
             expenseRow.put("description", String.join(" | ",
                     value(expense.getCategory()), value(expense.getNote())));
             expenseRow.put("amount", expense.getAmount());
@@ -123,9 +152,34 @@ public class TripSummaryReportDataService {
                 "SALES", sales,
                 "PURCHASE", purchases,
                 "EXPENSE", expensesTotal,
-                "PROFIT", sales.subtract(purchases).subtract(expensesTotal));
+                "PROFIT", sales.subtract(purchases).subtract(expensesTotal),
+                "MORTALITY", mortalityTotal);
         return new ReportData("Trip Summary Report", COLUMNS, rows, rows.size(),
                 sales, quantity, totals);
+    }
+
+    private Map<Integer, String> loadBuyerNames(TripDeliveryDetailsResponse details) {
+        Set<Integer> ids = details.getPayments().stream()
+                .map(Payment::getBuyingPartyId).filter(id -> id != null)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        return buyingPartyRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(BuyingParty::getId, BuyingParty::getName, (first, ignored) -> first));
+    }
+
+    private Map<Integer, String> loadSellerNames(TripDeliveryDetailsResponse details) {
+        Set<Integer> ids = new LinkedHashSet<>();
+        details.getPayments().stream().map(Payment::getSellingPartyId)
+                .filter(id -> id != null).forEach(ids::add);
+        details.getExpenses().stream().map(Expenses::getSellingPartyId)
+                .filter(id -> id != null).forEach(ids::add);
+        return sellingPartyRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(SellingParty::getId, SellingParty::getName, (first, ignored) -> first));
+    }
+
+    private String partyName(Map<Integer, String> names, Integer id, String type) {
+        if (id == null) return null;
+        String name = names.get(id);
+        return name == null || name.isBlank() ? type + " #" + id : name;
     }
 
     private Map<String, Object> orderRow(String type, Order order, BigDecimal amount,
