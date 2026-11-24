@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @Table(name = "delievery_party_relation", schema = "demo")
 @Data
 @NoArgsConstructor
-public class DeliveryPartyRelation implements ActiveRecord, AuditableRecord {
+public class DeliveryPartyRelation implements ActiveRecord, AuditableRecord , TenantScopedRecord {
     @TenantId
     @JsonIgnore
     @Column(name = "tenant_id", nullable = false, length = 64)
