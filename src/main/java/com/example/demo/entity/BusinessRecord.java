@@ -17,7 +17,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "business_record", schema = "demo")
-public class BusinessRecord {
+public class BusinessRecord implements TenantScopedRecord {
     @Id
     private UUID id;
 
@@ -59,6 +59,8 @@ public class BusinessRecord {
         updatedAt = LocalDateTime.now();
     }
 
+    @Override public String getTenantId() { return tenantId; }
+    @Override public void setTenantId(String tenantId) { this.tenantId = tenantId; }
     public UUID getId() { return id; }
     public String getResource() { return resource; }
     public Map<String, Object> getData() { return data; }
