@@ -28,8 +28,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class TripSummaryReportDataServiceTest {
-    @Test
-    void includesMortalityAndResolvesBuyerAndSellerNames() {
+    private BuyingParty buyingParty(String name) {\n        BuyingParty party = new BuyingParty();\n        party.setName(name);\n        return party;\n    }\n\n    private SellingParty sellingParty(String name) {\n        SellingParty party = new SellingParty();\n        party.setName(name);\n        return party;\n    }\n\n    @Test\n    void includesMortalityAndResolvesBuyerAndSellerNames() {
         TripDeliveryDetailsService detailsService = mock(TripDeliveryDetailsService.class);
         BuyingPartyRepository buyingPartyRepository = mock(BuyingPartyRepository.class);
         SellingPartyRepository sellingPartyRepository = mock(SellingPartyRepository.class);
@@ -47,7 +46,7 @@ class TripSummaryReportDataServiceTest {
         salesOrder.setRate(new BigDecimal("5"));
         salesOrder.setTotal(new BigDecimal("100"));
         VendorDeliveryRetrieveResponse vendorDelivery = VendorDeliveryRetrieveResponse.builder()
-                .sellingParty(SellingParty.builder().name("Market").build())
+                .sellingParty(sellingParty("Market"))
                 .actualOrders(List.of(salesOrder))
                 .build();
         DeliveryRetrieveResponse delivery = DeliveryRetrieveResponse.builder()
@@ -62,7 +61,7 @@ class TripSummaryReportDataServiceTest {
         purchaseOrder.setRate(new BigDecimal("4"));
         SupplierPickupRetrieveResponse pickup = SupplierPickupRetrieveResponse.builder()
                 .id(22)
-                .buyingParty(BuyingParty.builder().name("Farm").build())
+                .buyingParty(buyingParty("Farm"))
                 .actualOrders(List.of(purchaseOrder))
                 .build();
 
