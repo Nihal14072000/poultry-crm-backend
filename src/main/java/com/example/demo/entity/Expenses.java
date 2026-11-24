@@ -20,7 +20,7 @@ import java.math.BigDecimal;
 @Table(name = "expenses", schema = "demo")
 @Data
 @NoArgsConstructor
-public class Expenses implements ActiveRecord, AuditableRecord {
+public class Expenses implements ActiveRecord, AuditableRecord , TenantScopedRecord {
     @TenantId
     @JsonIgnore
     @Column(name = "tenant_id", nullable = false, length = 64)

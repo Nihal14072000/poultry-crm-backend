@@ -15,7 +15,7 @@ import java.time.OffsetDateTime;
 @Table(name = "finance_order_settlement", schema = "demo")
 @Data
 @NoArgsConstructor
-public class FinanceOrderSettlement {
+public class FinanceOrderSettlement implements TenantScopedRecord {
     @TenantId
     @JsonIgnore
     @Column(name = "tenant_id", nullable = false, length = 64)
