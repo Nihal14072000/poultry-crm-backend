@@ -161,7 +161,8 @@ public class TripSummaryReportDataService {
                 .map(Payment::getBuyingPartyId).filter(id -> id != null)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
         return buyingPartyRepository.findAllById(ids).stream()
-                .stream().filter(party -> party.getName() != null && !party.getName().isBlank())\n                .collect(Collectors.toMap(BuyingParty::getId, BuyingParty::getName, (first, ignored) -> first));
+                .filter(party -> party.getName() != null && !party.getName().isBlank())
+                .collect(Collectors.toMap(BuyingParty::getId, BuyingParty::getName, (first, ignored) -> first));
     }
 
     private Map<Integer, String> loadSellerNames(TripDeliveryDetailsResponse details) {
@@ -171,7 +172,8 @@ public class TripSummaryReportDataService {
         details.getExpenses().stream().map(Expenses::getSellingPartyId)
                 .filter(id -> id != null).forEach(ids::add);
         return sellingPartyRepository.findAllById(ids).stream()
-                .stream().filter(party -> party.getName() != null && !party.getName().isBlank())\n                .collect(Collectors.toMap(SellingParty::getId, SellingParty::getName, (first, ignored) -> first));
+                .filter(party -> party.getName() != null && !party.getName().isBlank())
+                .collect(Collectors.toMap(SellingParty::getId, SellingParty::getName, (first, ignored) -> first));
     }
 
     private String partyName(Map<Integer, String> names, Integer id, String type) {
