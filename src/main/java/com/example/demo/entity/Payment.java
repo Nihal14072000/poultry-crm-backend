@@ -1,5 +1,8 @@
 package com.example.demo.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.hibernate.annotations.TenantId;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -18,6 +21,11 @@ import java.math.BigDecimal;
 @Data
 @NoArgsConstructor
 public class Payment implements ActiveRecord, AuditableRecord {
+    @TenantId
+    @JsonIgnore
+    @Column(name = "tenant_id", nullable = false, length = 64)
+    private String tenantId;
+
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "payment_id_seq")
     @jakarta.persistence.SequenceGenerator(name = "payment_id_seq", sequenceName = "payment_id_seq", schema = "demo", allocationSize = 1)
