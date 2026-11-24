@@ -17,14 +17,12 @@ import com.example.demo.service.TripDeliveryDetailsService;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -108,7 +106,7 @@ public class TripSummaryReportDataService {
                     ? null : mortality.getCreateDate().toLocalDate());
             mortalityRow.put("reference_id", mortality.getId());
             mortalityRow.put("description", value(mortality.getReason()));
-            mortalityRow.put("quantity", birds);
+            mortalityRow.put("quantity", mortality.getCombinedMortality());
             rows.add(mortalityRow);
         }
 
@@ -163,7 +161,7 @@ public class TripSummaryReportDataService {
                 .map(Payment::getBuyingPartyId).filter(id -> id != null)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
         return buyingPartyRepository.findAllById(ids).stream()
-                .collect(Collectors.toMap(BuyingParty::getId, BuyingParty::getName, (first, ignored) -> first));
+                .stream().filter(party -> party.getName() != null && !party.getName().isBlank())\n                .collect(Collectors.toMap(BuyingParty::getId, BuyingParty::getName, (first, ignored) -> first));
     }
 
     private Map<Integer, String> loadSellerNames(TripDeliveryDetailsResponse details) {
@@ -173,7 +171,7 @@ public class TripSummaryReportDataService {
         details.getExpenses().stream().map(Expenses::getSellingPartyId)
                 .filter(id -> id != null).forEach(ids::add);
         return sellingPartyRepository.findAllById(ids).stream()
-                .collect(Collectors.toMap(SellingParty::getId, SellingParty::getName, (first, ignored) -> first));
+                .stream().filter(party -> party.getName() != null && !party.getName().isBlank())\n                .collect(Collectors.toMap(SellingParty::getId, SellingParty::getName, (first, ignored) -> first));
     }
 
     private String partyName(Map<Integer, String> names, Integer id, String type) {
