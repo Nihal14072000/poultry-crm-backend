@@ -28,7 +28,20 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class TripSummaryReportDataServiceTest {
-    private BuyingParty buyingParty(String name) {\n        BuyingParty party = new BuyingParty();\n        party.setName(name);\n        return party;\n    }\n\n    private SellingParty sellingParty(String name) {\n        SellingParty party = new SellingParty();\n        party.setName(name);\n        return party;\n    }\n\n    @Test\n    void includesMortalityAndResolvesBuyerAndSellerNames() {
+    private BuyingParty buyingParty(String name) {
+        BuyingParty party = new BuyingParty();
+        party.setName(name);
+        return party;
+    }
+
+    private SellingParty sellingParty(String name) {
+        SellingParty party = new SellingParty();
+        party.setName(name);
+        return party;
+    }
+
+    @Test
+    void includesMortalityAndResolvesBuyerAndSellerNames() {
         TripDeliveryDetailsService detailsService = mock(TripDeliveryDetailsService.class);
         BuyingPartyRepository buyingPartyRepository = mock(BuyingPartyRepository.class);
         SellingPartyRepository sellingPartyRepository = mock(SellingPartyRepository.class);
