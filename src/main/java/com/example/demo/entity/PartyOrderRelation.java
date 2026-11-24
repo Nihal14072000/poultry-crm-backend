@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 @Table(name = "party_order_relation", schema = "demo")
 @Data
 @NoArgsConstructor
-public class PartyOrderRelation implements ActiveRecord, AuditableRecord {
+public class PartyOrderRelation implements ActiveRecord, AuditableRecord , TenantScopedRecord {
     @TenantId
     @JsonIgnore
     @Column(name = "tenant_id", nullable = false, length = 64)

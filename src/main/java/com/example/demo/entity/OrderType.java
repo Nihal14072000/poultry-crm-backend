@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 @Table(name = "order_type", schema = "demo")
 @Data
 @NoArgsConstructor
-public class OrderType implements ActiveRecord, TimestampedRecord {
+public class OrderType implements ActiveRecord, TimestampedRecord , TenantScopedRecord {
     @TenantId
     @JsonIgnore
     @Column(name = "tenant_id", nullable = false, length = 64)
