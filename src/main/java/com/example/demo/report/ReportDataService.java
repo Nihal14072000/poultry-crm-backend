@@ -55,10 +55,10 @@ public class ReportDataService {
                        o.qty as quantity, o.weight, o.rate,
                        coalesce(o.total, o.weight * o.rate, 0) as amount
                   from demo.vendor_delievery vd
-                  join demo.selling_party sp on sp.id = vd.selling_party_id and sp.tenant_id = :tenantId and sp.tenant_id = :tenantId
+                  join demo.selling_party sp on sp.id = vd.selling_party_id and sp.tenant_id = :tenantId
                   join demo.party_order_relation por on por.party_id = vd.id
                        and por.tenant_id = :tenantId and por.party_type = 'VENDOR_DELIVERY' and por.is_active is true and por.is_deleted is false
-                  join demo."order" o on o.id = por.order_id and o.isactive is true and o.isdeleted is false
+                  join demo."order" o on o.id = por.order_id and o.tenant_id = :tenantId and o.isactive is true and o.isdeleted is false
                  where vd.tenant_id = :tenantId and vd.isactive is true and vd.isdeleted is false
                    and coalesce(vd.create_date::date, o.createdate::date) between :fromDate and :toDate
                    and (cast(:tripId as integer) is null or o.trip_id = :tripId)
@@ -78,8 +78,8 @@ public class ReportDataService {
                        o.qty as quantity, o.weight, o.rate,
                        coalesce(o.total, o.weight * o.rate, 0) as amount
                   from demo.supplier_pickup sp
-                  join demo.buying_party bp on bp.id = sp.buying_party_id
-                  join demo."order" o on o.id = sp.actual_order_id and o.isactive is true and o.isdeleted is false
+                  join demo.buying_party bp on bp.id = sp.buying_party_id and bp.tenant_id = :tenantId
+                  join demo."order" o on o.id = sp.actual_order_id and o.tenant_id = :tenantId and o.isactive is true and o.isdeleted is false
                  where sp.tenant_id = :tenantId and sp.isactive is true and sp.isdeleted is false
                    and coalesce(sp.created_ate::date, o.createdate::date) between :fromDate and :toDate
                    and (cast(:tripId as integer) is null or o.trip_id = :tripId)
@@ -135,12 +135,12 @@ public class ReportDataService {
                   left join lateral (
                       select sum(a.allocated_amount) as amount_paid
                         from demo.finance_payment_allocation a
-                        join demo.payment p on p.id = a.payment_id
-                       where a.settlement_id = s.id and a.allocation_type = 'SELLER_PAYOUT'
+                        join demo.payment p on p.id = a.payment_id and p.tenant_id = :tenantId
+                       where a.settlement_id = s.id and a.tenant_id = :tenantId and a.allocation_type = 'SELLER_PAYOUT'
                          and p.status = 'COMPLETED' and p.isactive is true and p.isdeleted is false
                          and p.payment_date <= :toDate
                   ) paid on true
-                 where s.status <> 'VOID' and s.settlement_date <= :toDate
+                 where s.tenant_id = :tenantId and s.status <> 'VOID' and s.settlement_date <= :toDate
                    and (cast(:partyId as integer) is null or s.selling_party_id = :partyId)
                  order by report_date, settlement_id
                 """, LocalDate.of(1900, 1, 1), asOf, null, partyId, null, null, tenantId);
@@ -156,8 +156,8 @@ public class ReportDataService {
                        and dpr.party_type = 'VENDOR_DELIVERY' and dpr.isactive is true and dpr.isdeleted is false
                   join demo.vendor_delievery vd on vd.id = dpr.party_id and vd.tenant_id = :tenantId
                        and vd.isactive is true and vd.isdeleted is false
-                  join demo.selling_party sp on sp.id = vd.selling_party_id
-                  join demo.party_order_relation por on por.party_id = vd.id
+                  join demo.selling_party sp on sp.id = vd.selling_party_id and sp.tenant_id = :tenantId
+                  join demo.party_order_relation por on por.party_id = vd.id and por.tenant_id = :tenantId
                        and por.party_type = 'VENDOR_DELIVERY' and por.is_active is true and por.is_deleted is false
                   join demo."order" o on o.id = por.order_id and o.isactive is true and o.isdeleted is false
                  where d.tenant_id = :tenantId and d.isactive is true and d.isdeleted is false
@@ -165,7 +165,7 @@ public class ReportDataService {
                    and (cast(:tripId as integer) is null or o.trip_id = :tripId)
                    and (cast(:partyId as integer) is null or vd.selling_party_id = :partyId)
                  order by report_date, d.id
-                """, from, to, tripId, partyId, null, null);
+                """, from, to, tripId, partyId, null, null, tenantId);
     }
 
     private List<Map<String, Object>> query(String sql, LocalDate from, LocalDate to, Integer tripId,

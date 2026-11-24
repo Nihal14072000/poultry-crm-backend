@@ -53,6 +53,7 @@ public class EmployeeAccountProvisioner {
         account.setPasswordHash(passwordEncoder.encode(username));
         account.setRole(AppRole.EMPLOYEE);
         account.setEmployeeId(employee.getId());
+        account.setTenantId(employee.getTenantId());
         account.setEnabled(true);
         userAccountRepository.save(account);
     }
