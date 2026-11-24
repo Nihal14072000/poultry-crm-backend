@@ -23,6 +23,7 @@ spring:
 reports:
   storage-dir: ${REPORT_STORAGE_DIR:./storage/reports}
   worker:
+    enabled: ${REPORT_WORKER_ENABLED:true}
     poll-interval-ms: ${REPORT_WORKER_POLL_INTERVAL_MS:3000}
 
 app:

@@ -3,6 +3,7 @@ package com.example.demo.report;
 import com.example.demo.security.TenantContext;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -10,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 @Component
+@ConditionalOnProperty(name = "reports.worker.enabled", havingValue = "true", matchIfMissing = true)
 public class ReportWorker {
     private final ReportJobRepository jobs;
     private final ReportDataService dataService;

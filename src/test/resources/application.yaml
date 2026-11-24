@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:poultry-crm-tests;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;INIT=CREATE SCHEMA IF NOT EXISTS demo
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        default_schema: demo
+  flyway:
+    enabled: false
+
+reports:
+  worker:
+    enabled: false

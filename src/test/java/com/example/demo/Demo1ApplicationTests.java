@@ -22,11 +22,11 @@ class Demo1ApplicationTests {
     }
 
     @Test
-    void allowsCorsPreflightRequestsFromAnyOrigin() throws Exception {
-        mockMvc.perform(options("/hello")
-                        .header("Origin", "https://frontend.example")
+    void allowsCorsPreflightRequestsFromConfiguredOrigin() throws Exception {
+        mockMvc.perform(options("/api/data/farms")
+                        .header("Origin", "http://localhost:4200")
                         .header("Access-Control-Request-Method", "GET"))
                 .andExpect(status().isOk())
-                .andExpect(header().string("Access-Control-Allow-Origin", "*"));
+                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:4200"));
     }
 }
