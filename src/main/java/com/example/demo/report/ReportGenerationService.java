@@ -37,8 +37,14 @@ public class ReportGenerationService {
             fromDate = tripDate;
             toDate = tripDate;
         }
+        Map<String, Object> filters = request.filters() == null ? Map.of() : request.filters();
+        var existing = jobs.findMatching(request.reportType().name(), fromDate, toDate,
+                request.format().name(), filters, userId);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
         long id = jobs.create(request.reportType().name(), fromDate, toDate,
-                request.format().name(), request.filters(), userId);
+                request.format().name(), filters, userId);
         return jobs.findResponse(id, userId).orElseThrow();
     }
 

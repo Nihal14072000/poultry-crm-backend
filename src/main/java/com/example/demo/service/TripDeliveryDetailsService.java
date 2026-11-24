@@ -7,6 +7,7 @@ import com.example.demo.dto.TripRetrieveResponse;
 import com.example.demo.entity.ActiveRecord;
 import com.example.demo.entity.Expenses;
 import com.example.demo.entity.Mortality;
+import com.example.demo.entity.Payment;
 import com.example.demo.entity.SupplierPickup;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class TripDeliveryDetailsService {
     private final SupplierPickupService supplierPickupService;
     private final MortalityService mortalityService;
     private final ExpensesService expensesService;
+    private final PaymentService paymentService;
     private final Executor tripDeliveryExecutor;
 
     public TripDeliveryDetailsService(
@@ -32,6 +34,7 @@ public class TripDeliveryDetailsService {
             SupplierPickupService supplierPickupService,
             MortalityService mortalityService,
             ExpensesService expensesService,
+            PaymentService paymentService,
             @Qualifier("tripDeliveryExecutor") Executor tripDeliveryExecutor
     ) {
         this.tripService = tripService;
@@ -39,6 +42,7 @@ public class TripDeliveryDetailsService {
         this.supplierPickupService = supplierPickupService;
         this.mortalityService = mortalityService;
         this.expensesService = expensesService;
+        this.paymentService = paymentService;
         this.tripDeliveryExecutor = tripDeliveryExecutor;
     }
 
@@ -65,18 +69,23 @@ public class TripDeliveryDetailsService {
                 CompletableFuture.supplyAsync(
                         () -> expensesService.findByTripId(tripId), tripDeliveryExecutor);
 
+        CompletableFuture<List<Payment>> paymentsFuture =
+                CompletableFuture.supplyAsync(
+                        () -> paymentService.findActiveEntitiesByTripId(tripId), tripDeliveryExecutor);
+
         // Pickup IDs are available only after deliveries have been retrieved.
         CompletableFuture<List<SupplierPickupRetrieveResponse>> pickupsFuture =
                 deliveriesFuture.thenCompose(this::retrieveSupplierPickupsAsync);
 
         TripDeliveryDetailsResponse response = CompletableFuture.allOf(
-                        deliveriesFuture, mortalitiesFuture, expensesFuture, pickupsFuture)
+                        deliveriesFuture, mortalitiesFuture, expensesFuture, paymentsFuture, pickupsFuture)
                 .thenApply(ignored -> TripDeliveryDetailsResponse.builder()
                         .trip(trip.get())
                         .deliveries(deliveriesFuture.join())
                         .supplierPickups(pickupsFuture.join())
                         .mortalities(mortalitiesFuture.join())
                         .expenses(expensesFuture.join())
+                        .payments(paymentsFuture.join())
                         .build())
                 .join();
 

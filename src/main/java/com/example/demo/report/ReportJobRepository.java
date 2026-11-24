@@ -42,6 +42,32 @@ public class ReportJobRepository {
         }
     }
 
+    public Optional<GeneratedReportResponse> findMatching(
+            String type, LocalDate from, LocalDate to, String format,
+            Map<String, Object> filters, Integer requestedBy) {
+        try {
+            String json = mapper.writeValueAsString(filters == null ? Map.of() : filters);
+            return jdbc.sql("""
+                    select id, report_type, from_date, to_date, report_format, status,
+                           file_name, error_message, created_at, completed_at
+                    from demo.generated_report
+                    where report_type = :type
+                      and from_date = :fromDate
+                      and to_date = :toDate
+                      and report_format = :format
+                      and filters = cast(:filters as jsonb)
+                      and requested_by = :requestedBy
+                    order by created_at desc
+                    limit 1
+                    """)
+                    .param("type", type).param("fromDate", from).param("toDate", to)
+                    .param("format", format).param("filters", json).param("requestedBy", requestedBy)
+                    .query((rs, row) -> response(rs)).optional();
+        } catch (Exception ex) {
+            throw new IllegalStateException("Unable to find matching report job", ex);
+        }
+    }
+
     public List<GeneratedReportResponse> findRecentForUser(Integer userId) {
         return jdbc.sql("""
                 select id, report_type, from_date, to_date, report_format, status,

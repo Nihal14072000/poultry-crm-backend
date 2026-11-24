@@ -236,6 +236,11 @@ public class PaymentService extends CrudService<Payment> {
         )).toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<Payment> findActiveEntitiesByTripId(Integer tripId) {
+        return repository.findActiveByTripIdOrderByCreateDateDesc(tripId);
+    }
+
     private Map<Integer, List<Order>> groupActiveOrdersByParty(
             List<PartyOrderRelation> relations,
             Map<Integer, Order> ordersById

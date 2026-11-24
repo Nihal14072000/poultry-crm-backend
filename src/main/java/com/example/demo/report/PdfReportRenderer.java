@@ -9,7 +9,9 @@ import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 public class PdfReportRenderer {
@@ -43,52 +45,90 @@ public class PdfReportRenderer {
             metadata.setSpacingAfter(14);
             document.add(metadata);
 
-            PdfPTable summary = new PdfPTable(3);
+            boolean tripSummary = job.reportType().equals("TRIP_SUMMARY");
+            PdfPTable summary = new PdfPTable(tripSummary ? 4 : 3);
             summary.setWidthPercentage(100);
-            summary.setWidths(new float[]{1, 1, 1});
-            addMetric(summary, "RECORDS", String.valueOf(data.recordCount()));
-            addMetric(summary, job.reportType().equals("TRIP_SUMMARY") ? "ORDER VALUE" : "TOTAL AMOUNT",
-                    "INR " + money(data.totalAmount()));
-            addMetric(summary, job.reportType().equals("TRIP_SUMMARY") ? "ORDER QUANTITY" : "TOTAL QUANTITY",
-                    money(data.totalQuantity()));
+            summary.setWidths(tripSummary ? new float[]{1, 1, 1, 1} : new float[]{1, 1, 1});
+            if (tripSummary) {
+                addMetric(summary, "TOTAL SALES", "INR " + money(data.summaryTotals().get("SALES")));
+                addMetric(summary, "TOTAL PURCHASE", "INR " + money(data.summaryTotals().get("PURCHASE")));
+                addMetric(summary, "TOTAL EXPENSE", "INR " + money(data.summaryTotals().get("EXPENSE")));
+                addMetric(summary, "PROFIT", "INR " + money(data.summaryTotals().get("PROFIT")));
+            } else {
+                addMetric(summary, "RECORDS", String.valueOf(data.recordCount()));
+                addMetric(summary, "TOTAL AMOUNT", "INR " + money(data.totalAmount()));
+                addMetric(summary, "TOTAL QUANTITY", money(data.totalQuantity()));
+            }
             summary.setSpacingAfter(16);
             document.add(summary);
 
-            Paragraph detailHeading = new Paragraph(job.reportType().equals("TRIP_SUMMARY")
-                    ? "Trip Activity Details" : "Detailed Records", SECTION);
-            detailHeading.setSpacingAfter(7);
-            document.add(detailHeading);
-
-            int columnCount = Math.max(1, data.columns().size());
-            PdfPTable table = new PdfPTable(columnCount);
-            table.setWidthPercentage(100);
-            table.setHeaderRows(1);
-            table.setSplitRows(true);
-            for (String column : data.columns()) {
-                PdfPCell cell = new PdfPCell(new Phrase(label(column), HEADER));
-                cell.setBackgroundColor(new Color(42, 70, 98));
-                cell.setPadding(6);
-                table.addCell(cell);
+            if (tripSummary) {
+                addTripSections(document, data.rows());
+            } else {
+                Paragraph detailHeading = new Paragraph("Detailed Records", SECTION);
+                detailHeading.setSpacingAfter(7);
+                document.add(detailHeading);
+                addTable(document, data.columns(), data.rows());
             }
-            for (Map<String, Object> row : data.rows()) {
-                for (String column : data.columns()) {
-                    PdfPCell cell = new PdfPCell(new Phrase(format(row.get(column)), BODY));
-                    cell.setPadding(5);
-                    table.addCell(cell);
-                }
-            }
-            if (data.rows().isEmpty()) {
-                PdfPCell empty = new PdfPCell(new Phrase("No records found for the selected filters.", BODY));
-                empty.setColspan(columnCount);
-                empty.setPadding(12);
-                table.addCell(empty);
-            }
-            document.add(table);
             document.close();
             return output.toByteArray();
         } catch (Exception ex) {
             throw new IllegalStateException("Unable to render PDF report", ex);
         }
+    }
+
+    private void addTripSections(Document document, List<Map<String, Object>> rows) throws DocumentException {
+        addTripSection(document, "Trip Details", "TRIP", rows,
+                List.of("report_date", "reference_id", "description", "status"));
+        addTripSection(document, "Sales", "SALES", rows,
+                List.of("report_date", "reference_id", "party_name", "quantity", "weight", "rate", "amount"));
+        addTripSection(document, "Purchase", "PURCHASE", rows,
+                List.of("report_date", "reference_id", "party_name", "quantity", "weight", "rate", "amount"));
+        addTripSection(document, "Payments", "PAYMENT", rows,
+                List.of("report_date", "reference_id", "party_name", "description", "amount", "status"));
+        addTripSection(document, "Expenses", "EXPENSE", rows,
+                List.of("report_date", "reference_id", "party_name", "description", "amount"));
+    }
+
+    private void addTripSection(Document document, String title, String type,
+                                List<Map<String, Object>> rows, List<String> columns) throws DocumentException {
+        List<Map<String, Object>> sectionRows = rows.stream()
+                .filter(row -> type.equals(row.get("record_type")))
+                .collect(Collectors.toList());
+        Paragraph heading = new Paragraph(title, SECTION);
+        heading.setSpacingBefore(8);
+        heading.setSpacingAfter(5);
+        document.add(heading);
+        addTable(document, columns, sectionRows);
+    }
+
+    private void addTable(Document document, List<String> columns, List<Map<String, Object>> rows)
+            throws DocumentException {
+        int columnCount = Math.max(1, columns.size());
+        PdfPTable table = new PdfPTable(columnCount);
+        table.setWidthPercentage(100);
+        table.setHeaderRows(1);
+        table.setSplitRows(true);
+        for (String column : columns) {
+            PdfPCell cell = new PdfPCell(new Phrase(label(column), HEADER));
+            cell.setBackgroundColor(new Color(42, 70, 98));
+            cell.setPadding(6);
+            table.addCell(cell);
+        }
+        for (Map<String, Object> row : rows) {
+            for (String column : columns) {
+                PdfPCell cell = new PdfPCell(new Phrase(format(row.get(column)), BODY));
+                cell.setPadding(5);
+                table.addCell(cell);
+            }
+        }
+        if (rows.isEmpty()) {
+            PdfPCell empty = new PdfPCell(new Phrase("No records found.", BODY));
+            empty.setColspan(columnCount);
+            empty.setPadding(10);
+            table.addCell(empty);
+        }
+        document.add(table);
     }
 
     private void addMetric(PdfPTable table, String label, String value) {
