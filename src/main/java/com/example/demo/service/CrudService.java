@@ -3,6 +3,7 @@ package com.example.demo.service;
 import com.example.demo.entity.ActiveRecord;
 import com.example.demo.entity.CreatedRecord;
 import com.example.demo.entity.TimestampedRecord;
+import com.example.demo.entity.TenantScopedRecord;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,6 +60,10 @@ public class CrudService<T extends CreatedRecord> {
             return Optional.empty();
         }
         idSetter.accept(entity, id);
+        if (entity instanceof TenantScopedRecord tenantRecord
+                && existing.get() instanceof TenantScopedRecord existingTenant) {
+            tenantRecord.setTenantId(existingTenant.getTenantId());
+        }
         if (entity instanceof ActiveRecord record && existing.get() instanceof ActiveRecord existingRecord) {
             record.setIsActive(existingRecord.getIsActive());
             record.setIsDeleted(existingRecord.getIsDeleted());
