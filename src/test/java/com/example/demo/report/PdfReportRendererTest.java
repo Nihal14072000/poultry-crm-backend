@@ -14,7 +14,7 @@ class PdfReportRendererTest {
     void rendersAValidPdfWithReportHeadingAndRows() {
         ReportJob job = new ReportJob(1L, "SALES", LocalDate.of(2026, 11, 1),
                 LocalDate.of(2026, 11, 21), "PDF", "PROCESSING", Map.of(), 7,
-                null, null, null, LocalDate.now().atStartOfDay(), null);
+                "default", null, null, null, LocalDate.now().atStartOfDay(), null);
         ReportData data = new ReportData("Sales Report", List.of("report_date", "party_name", "amount"),
                 List.of(Map.of("report_date", java.sql.Date.valueOf("2026-11-02"),
                         "party_name", "ABC Traders", "amount", new BigDecimal("45000.00"))),
