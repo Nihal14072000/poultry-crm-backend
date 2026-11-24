@@ -46,6 +46,7 @@ public class EmployeeAccountService {
         account.setPasswordHash(passwordEncoder.encode(request.password()));
         account.setRole(AppRole.EMPLOYEE);
         account.setEmployeeId(request.employeeId());
+        account.setTenantId(com.example.demo.security.TenantContext.currentTenantId());
         UserAccount saved = userAccountRepository.save(account);
         return new EmployeeAccountResponse(
                 saved.getId(),

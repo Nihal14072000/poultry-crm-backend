@@ -58,6 +58,7 @@ public class SignupService {
         account.setPasswordHash(passwordEncoder.encode(request.password()));
         account.setRole(AppRole.EMPLOYEE);
         account.setEmployeeId(savedEmployee.getId());
+        account.setTenantId(com.example.demo.security.TenantContext.currentTenantId());
         UserAccount savedAccount = userAccountRepository.save(account);
 
         return new EmployeeAccountResponse(
