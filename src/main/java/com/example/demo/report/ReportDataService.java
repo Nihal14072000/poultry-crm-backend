@@ -85,7 +85,7 @@ public class ReportDataService {
                    and (cast(:tripId as integer) is null or o.trip_id = :tripId)
                    and (cast(:partyId as integer) is null or sp.buying_party_id = :partyId)
                  order by report_date, sp.id
-                """, from, to, tripId, partyId, null, null);
+                """, from, to, tripId, partyId, null, null, tenantId);
     }
 
     private List<Map<String, Object>> payments(LocalDate from, LocalDate to, Integer tripId, Integer partyId,

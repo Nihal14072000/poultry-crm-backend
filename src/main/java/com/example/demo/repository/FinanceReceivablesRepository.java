@@ -17,7 +17,7 @@ public class FinanceReceivablesRepository {
                 select
                     coalesce((select sum(p.amount)
                               from demo.payment p
-                              where p.payment_type = 'BUYER_RECEIPT'
+                              where p.tenant_id = :tenantId and p.payment_type = 'BUYER_RECEIPT'
                                 and p.status = 'COMPLETED'
                                 and p.isactive is true
                                 and p.isdeleted is not true
@@ -30,6 +30,7 @@ public class FinanceReceivablesRepository {
                                     select 1
                                     from demo.party_order_relation por
                                     where por.order_id = o.id
+                                      and por.tenant_id = :tenantId
                                       and por.party_type = 'B'
                                       and por.is_active is true
                                       and por.is_deleted is false
@@ -37,7 +38,7 @@ public class FinanceReceivablesRepository {
                                 )), 0) as total_receivable,
                     coalesce((select sum(p.amount)
                               from demo.payment p
-                              where p.payment_type = 'SELLER_PAYOUT'
+                              where p.tenant_id = :tenantId and p.payment_type = 'SELLER_PAYOUT'
                                 and p.status = 'COMPLETED'
                                 and p.isactive is true
                                 and p.isdeleted is not true
@@ -46,6 +47,7 @@ public class FinanceReceivablesRepository {
                               from demo."order" o
                               join demo.party_order_relation por
                                 on por.order_id = o.id
+                               and por.tenant_id = :tenantId
                                and por.party_type = 'VENDOR_DELIVERY'
                                and por.is_active is true
                                and por.is_deleted is false
@@ -54,7 +56,7 @@ public class FinanceReceivablesRepository {
                                and vd.tenant_id = :tenantId
                                and vd.isactive is true
                                and vd.isdeleted is false
-                              where o.isactive is true
+                              where o.tenant_id = :tenantId and o.isactive is true
                                 and o.isdeleted is not true
                                 and (cast(:sellingPartyId as integer) is null or vd.selling_party_id = :sellingPartyId)
                                 and exists (
