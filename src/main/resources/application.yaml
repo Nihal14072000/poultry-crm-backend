@@ -19,12 +19,6 @@ spring:
         default_schema: demo
         tenant_identifier_resolver: com.example.demo.security.TenantIdentifierResolver
     open-in-view: false
-  flyway:
-    enabled: true
-    schemas: demo
-    default-schema: demo
-    baseline-on-migrate: true
-    baseline-version: 1
 
 reports:
   storage-dir: ${REPORT_STORAGE_DIR:./storage/reports}
@@ -50,3 +44,6 @@ management:
     health:
       probes:
         enabled: true
+
+server:
+  forward-headers-strategy: framework
