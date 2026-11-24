@@ -32,10 +32,10 @@ public class AdminAccountInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        if (repository.existsByRole(AppRole.ADMIN)) return;
         if (username.isBlank() || password.isBlank()) {
             throw new IllegalStateException("Bootstrap admin credentials must be configured explicitly");
         }
+        if (repository.existsByUsername(username)) return;
         if (repository.existsByUsername(username)) {
             throw new IllegalStateException("Configured bootstrap admin username already belongs to another account");
         }

@@ -1,7 +1,5 @@
 package com.example.demo.report;
 
-import com.example.demo.security.TenantContext;
-
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 
