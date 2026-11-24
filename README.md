@@ -6,7 +6,7 @@ Set `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD` in the environment before running
 
 ## Generated reports
 
-Before deploying the report-generation feature to an existing database, run `src/main/resources/reporting-schema.sql` once against the application's PostgreSQL database. This creates the persistent report-job history table and indexes.
+Before deploying the report-generation feature to an existing database, run `src/main/resources/reporting-schema.sql` once against the application's PostgreSQL database. This creates the persistent report-job history table and indexes and updates the supported report types.
 
 Generated PDF files are written to `REPORT_STORAGE_DIR` when configured, or to `./storage/reports` by default. The directory must be on persistent server storage and writable by the application process. PostgreSQL stores report metadata and the generated file path, not the PDF bytes.
 
@@ -18,9 +18,9 @@ Generated PDF files are written to `REPORT_STORAGE_DIR` when configured, or to `
 - `GET /api/reports/{id}/download` — download a completed PDF.
 - `POST /api/reports/{id}/retry` — requeue a failed report.
 
-Supported report types: `SALES`, `PURCHASE`, `PAYMENTS`, `OUTSTANDING`, and `DELIVERIES`. Report dates are required; the maximum range is five years. Optional filters are `tripId` and `partyId`; payment reports also accept `paymentType` and `status`. For outstanding reports, `toDate` is the as-of date.
+Supported report types: `SALES`, `PURCHASE`, `PAYMENTS`, `OUTSTANDING`, `DELIVERIES`, and `TRIP_SUMMARY`. Date ranges are required for all reports except `TRIP_SUMMARY`, which requires a positive `tripId` and uses the trip's date automatically. The maximum date range for other reports is five years. Optional filters are `tripId` and `partyId`; payment reports also accept `paymentType` and `status`. For outstanding reports, `toDate` is the as-of date.
 
-Example request:
+Example date-range request:
 
 ```json
 {
@@ -34,5 +34,19 @@ Example request:
   }
 }
 ```
+
+Example Trip Summary request:
+
+```json
+{
+  "reportType": "TRIP_SUMMARY",
+  "format": "PDF",
+  "filters": {
+    "tripId": 125
+  }
+}
+```
+
+Trip Summary includes the trip header, active trip orders, payments, and expenses. Its PDF uses the existing asynchronous report job, status, download, and retry workflow.
 
 Jobs are claimed from PostgreSQL using `FOR UPDATE SKIP LOCKED`, so multiple application instances can share the queue without claiming the same queued job. Report history and files are private to the authenticated user who requested them.

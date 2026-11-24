@@ -12,14 +12,19 @@ import java.util.Map;
 @Service
 public class ReportDataService {
     private final JdbcClient jdbc;
+    private final TripSummaryReportDataService tripSummaryData;
 
-    public ReportDataService(JdbcClient jdbc) {
+    public ReportDataService(JdbcClient jdbc, TripSummaryReportDataService tripSummaryData) {
         this.jdbc = jdbc;
+        this.tripSummaryData = tripSummaryData;
     }
 
     public ReportData load(ReportJob job) {
         Map<String, Object> filters = job.filters() == null ? Map.of() : job.filters();
         Integer tripId = integerFilter(filters, "tripId");
+        if (ReportType.valueOf(job.reportType()) == ReportType.TRIP_SUMMARY) {
+            return tripSummaryData.load(tripId);
+        }
         Integer partyId = integerFilter(filters, "partyId");
         String paymentType = stringFilter(filters, "paymentType");
         String paymentStatus = stringFilter(filters, "status");
@@ -29,6 +34,7 @@ public class ReportDataService {
             case PAYMENTS -> payments(job.fromDate(), job.toDate(), tripId, partyId, paymentType, paymentStatus);
             case OUTSTANDING -> outstanding(job.toDate(), partyId);
             case DELIVERIES -> deliveries(job.fromDate(), job.toDate(), tripId, partyId);
+            case TRIP_SUMMARY -> throw new IllegalStateException("Trip Summary dispatch should have returned earlier");
         };
         List<String> columns = rows.isEmpty() ? defaultColumns(job.reportType()) : List.copyOf(rows.get(0).keySet());
         BigDecimal amount = rows.stream().map(r -> decimal(r.get("amount") != null ? r.get("amount") : r.get("outstanding_amount")))

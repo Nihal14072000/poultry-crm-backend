@@ -35,7 +35,9 @@ public class PdfReportRenderer {
 
             String period = job.reportType().equals("OUTSTANDING")
                     ? "Outstanding as of " + job.toDate().format(DATE)
-                    : job.fromDate().format(DATE) + " - " + job.toDate().format(DATE);
+                    : job.reportType().equals("TRIP_SUMMARY")
+                        ? "Trip ID: " + job.filters().get("tripId") + "     |     Trip date: " + job.fromDate().format(DATE)
+                        : job.fromDate().format(DATE) + " - " + job.toDate().format(DATE);
             Paragraph metadata = new Paragraph("Reporting period: " + period
                     + "     |     Generated: " + LocalDate.now().format(DATE), BODY);
             metadata.setSpacingAfter(14);
@@ -45,12 +47,15 @@ public class PdfReportRenderer {
             summary.setWidthPercentage(100);
             summary.setWidths(new float[]{1, 1, 1});
             addMetric(summary, "RECORDS", String.valueOf(data.recordCount()));
-            addMetric(summary, "TOTAL AMOUNT", "INR " + money(data.totalAmount()));
-            addMetric(summary, "TOTAL QUANTITY", money(data.totalQuantity()));
+            addMetric(summary, job.reportType().equals("TRIP_SUMMARY") ? "ORDER VALUE" : "TOTAL AMOUNT",
+                    "INR " + money(data.totalAmount()));
+            addMetric(summary, job.reportType().equals("TRIP_SUMMARY") ? "ORDER QUANTITY" : "TOTAL QUANTITY",
+                    money(data.totalQuantity()));
             summary.setSpacingAfter(16);
             document.add(summary);
 
-            Paragraph detailHeading = new Paragraph("Detailed Records", SECTION);
+            Paragraph detailHeading = new Paragraph(job.reportType().equals("TRIP_SUMMARY")
+                    ? "Trip Activity Details" : "Detailed Records", SECTION);
             detailHeading.setSpacingAfter(7);
             document.add(detailHeading);
 
