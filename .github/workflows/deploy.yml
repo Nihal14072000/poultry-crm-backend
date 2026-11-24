@@ -117,10 +117,9 @@ jobs:
           fi
 
           nohup java -jar "$DEPLOY_PATH/app.jar" \
-            --spring.config.additional-location=file:/home/ubuntu/poultry-crm-backend/target/application.yaml \
             --server.address=0.0.0.0 \
-            --server.port=1111 \
-            --management.endpoints.web.exposure.include=health \
+            --server.port="$SERVER_PORT" \
+            --management.endpoints.web.exposure.include=health,info \
             --management.endpoint.health.show-details=never \
             > "$DEPLOY_PATH/app.log" 2>&1 < /dev/null &
 
