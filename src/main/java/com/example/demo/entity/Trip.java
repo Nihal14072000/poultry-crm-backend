@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 @Table(name = "trip", schema = "demo")
 @Data
 @NoArgsConstructor
-public class Trip implements AuditableRecord {
+public class Trip implements AuditableRecord , TenantScopedRecord {
     @TenantId
     @JsonIgnore
     @Column(name = "tenant_id", nullable = false, length = 64)

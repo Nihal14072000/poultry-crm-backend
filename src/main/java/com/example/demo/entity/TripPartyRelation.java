@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Table(name = "trip_party_relation", schema = "demo")
 @Data
 @NoArgsConstructor
-public class TripPartyRelation implements ActiveRecord, AuditableRecord {
+public class TripPartyRelation implements ActiveRecord, AuditableRecord , TenantScopedRecord {
     @TenantId
     @JsonIgnore
     @Column(name = "tenant_id", nullable = false, length = 64)

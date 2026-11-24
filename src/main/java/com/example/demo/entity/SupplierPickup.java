@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 @Table(name = "supplier_pickup", schema = "demo")
 @Data
 @NoArgsConstructor
-public class SupplierPickup implements ActiveRecord, AuditableRecord {
+public class SupplierPickup implements ActiveRecord, AuditableRecord , TenantScopedRecord {
     @TenantId
     @JsonIgnore
     @Column(name = "tenant_id", nullable = false, length = 64)
