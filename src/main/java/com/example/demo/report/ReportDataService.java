@@ -68,7 +68,7 @@ public class ReportDataService {
                                where dpr.party_id = vd.id and dpr.tenant_id = :tenantId and dpr.party_type = 'VENDOR_DELIVERY'
                                  and dpr.isactive is true and dpr.isdeleted is false)
                  order by report_date, vd.id
-                """, from, to, tripId, partyId, null, null);
+                """, from, to, tripId, partyId, null, null, tenantId);
     }
 
     private List<Map<String, Object>> purchases(LocalDate from, LocalDate to, Integer tripId, Integer partyId, String tenantId) {
@@ -104,7 +104,7 @@ public class ReportDataService {
                    and (cast(:paymentType as varchar) is null or p.payment_type = :paymentType)
                    and (cast(:status as varchar) is null or p.status = :status)
                  order by p.payment_date, p.id
-                """, from, to, tripId, partyId, paymentType, status);
+                """, from, to, tripId, partyId, paymentType, status, tenantId);
     }
 
     private List<Map<String, Object>> outstanding(LocalDate asOf, Integer partyId, String tenantId) {
@@ -143,7 +143,7 @@ public class ReportDataService {
                  where s.status <> 'VOID' and s.settlement_date <= :toDate
                    and (cast(:partyId as integer) is null or s.selling_party_id = :partyId)
                  order by report_date, settlement_id
-                """, LocalDate.of(1900, 1, 1), asOf, null, partyId, null, null);
+                """, LocalDate.of(1900, 1, 1), asOf, null, partyId, null, null, tenantId);
     }
 
     private List<Map<String, Object>> deliveries(LocalDate from, LocalDate to, Integer tripId, Integer partyId, String tenantId) {
