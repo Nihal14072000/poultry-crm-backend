@@ -66,3 +66,24 @@ CREATE INDEX IF NOT EXISTS idx_report_tenant_owner_created
 
 -- All existing rows are assigned to the original/default organization.
 -- New organization registrations receive an isolated tenant_id.
+
+-- Tenant-leading indexes keep discriminator-filtered reads efficient as organizations grow.
+CREATE INDEX IF NOT EXISTS idx_user_account_tenant_id ON demo."user_account" (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_buying_party_tenant_id ON demo."buying_party" (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_delievery_tenant_id ON demo."delievery" (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_delievery_party_relation_tenant_id ON demo."delievery_party_relation" (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_employee_tenant_id ON demo."employee" (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_expenses_tenant_id ON demo."expenses" (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_finance_order_settlement_tenant_id ON demo."finance_order_settlement" (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_finance_payment_allocation_tenant_id ON demo."finance_payment_allocation" (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_mortality_tenant_id ON demo."mortality" (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_order_tenant_id ON demo."order" (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_order_type_tenant_id ON demo."order_type" (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_party_order_relation_tenant_id ON demo."party_order_relation" (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_payment_tenant_id ON demo."payment" (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_selling_party_tenant_id ON demo."selling_party" (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_supplier_pickup_tenant_id ON demo."supplier_pickup" (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_trip_tenant_id ON demo."trip" (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_trip_party_relation_tenant_id ON demo."trip_party_relation" (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_vehicle_tenant_id ON demo."vehicle" (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_vendor_delievery_tenant_id ON demo."vendor_delievery" (tenant_id);
