@@ -13,6 +13,7 @@ public record ReportJob(
         String status,
         Map<String, Object> filters,
         Integer requestedBy,
+        String tenantId,
         String filePath,
         String fileName,
         String errorMessage,

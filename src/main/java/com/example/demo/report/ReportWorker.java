@@ -1,5 +1,7 @@
 package com.example.demo.report;
 
+import com.example.demo.security.TenantContext;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -25,7 +27,14 @@ public class ReportWorker {
     @Scheduled(fixedDelayString = "${reports.worker.poll-interval-ms:3000}")
     public void processNext() {
         jobs.requeueStaleProcessing();
-        jobs.claimNext().ifPresent(this::process);
+        jobs.claimNext().ifPresent(job -> {
+            TenantContext.setTenantId(job.tenantId());
+            try {
+                process(job);
+            } finally {
+                TenantContext.clear();
+            }
+        });
     }
 
     private void process(ReportJob job) {

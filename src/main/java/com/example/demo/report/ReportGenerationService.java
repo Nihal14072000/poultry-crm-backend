@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import com.example.demo.security.TenantContext;
 
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -121,8 +122,8 @@ public class ReportGenerationService {
     }
 
     private LocalDate findTripDate(Integer tripId) {
-        return jdbc.sql("select \"date\" from demo.trip where trip_id = :tripId")
-                .param("tripId", tripId)
+        return jdbc.sql("select \"date\" from demo.trip where trip_id = :tripId and tenant_id = :tenantId")
+                .param("tripId", tripId).param("tenantId", TenantContext.currentTenantId())
                 .query(LocalDate.class)
                 .optional()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trip not found"));
