@@ -1,5 +1,8 @@
 package com.example.demo.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.hibernate.annotations.TenantId;
+
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,6 +16,11 @@ import java.time.OffsetDateTime;
 @Data
 @NoArgsConstructor
 public class FinancePaymentAllocation {
+    @TenantId
+    @JsonIgnore
+    @Column(name = "tenant_id", nullable = false, length = 64)
+    private String tenantId;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
