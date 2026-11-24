@@ -6,10 +6,12 @@ import com.example.demo.repository.UserAccountRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnProperty(name = "app.security.bootstrap-admin.enabled", havingValue = "true")
 public class AdminAccountInitializer implements ApplicationRunner {
     private final UserAccountRepository repository;
     private final PasswordEncoder passwordEncoder;
@@ -19,8 +21,8 @@ public class AdminAccountInitializer implements ApplicationRunner {
     public AdminAccountInitializer(
             UserAccountRepository repository,
             PasswordEncoder passwordEncoder,
-            @Value("${app.security.admin.username:admin}") String username,
-            @Value("${app.security.admin.password:admin}") String password
+            @Value("${app.security.admin.username:}") String username,
+            @Value("${app.security.admin.password:}") String password
     ) {
         this.repository = repository;
         this.passwordEncoder = passwordEncoder;
@@ -30,17 +32,18 @@ public class AdminAccountInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        if (repository.existsByRole(AppRole.ADMIN)) {
-            return;
+        if (repository.existsByRole(AppRole.ADMIN)) return;
+        if (username.isBlank() || password.isBlank()) {
+            throw new IllegalStateException("Bootstrap admin credentials must be configured explicitly");
         }
         if (repository.existsByUsername(username)) {
             throw new IllegalStateException("Configured bootstrap admin username already belongs to another account");
         }
-
         UserAccount admin = new UserAccount();
         admin.setUsername(username);
         admin.setPasswordHash(passwordEncoder.encode(password));
         admin.setRole(AppRole.ADMIN);
+        admin.setTenantId("default");
         admin.setEnabled(true);
         repository.save(admin);
     }

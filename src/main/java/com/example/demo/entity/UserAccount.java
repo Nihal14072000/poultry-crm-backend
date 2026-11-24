@@ -1,5 +1,7 @@
 package com.example.demo.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -34,6 +36,10 @@ public class UserAccount {
 
     @Column(name = "employee_id", unique = true)
     private Integer employeeId;
+
+    @JsonIgnore
+    @Column(name = "tenant_id", nullable = false, length = 64)
+    private String tenantId;
 
     @Column(nullable = false)
     private boolean enabled = true;

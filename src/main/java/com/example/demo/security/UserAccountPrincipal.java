@@ -11,6 +11,7 @@ import java.util.List;
 public final class UserAccountPrincipal implements UserDetails {
     private final Integer id;
     private final String username;
+    private final String tenantId;
     private final String password;
     private final boolean enabled;
     private final Collection<? extends GrantedAuthority> authorities;
@@ -18,6 +19,7 @@ public final class UserAccountPrincipal implements UserDetails {
     public UserAccountPrincipal(UserAccount account) {
         this.id = account.getId();
         this.username = account.getUsername();
+        this.tenantId = account.getTenantId();
         this.password = account.getPasswordHash();
         this.enabled = account.isEnabled();
         this.authorities = List.of(new SimpleGrantedAuthority("ROLE_" + account.getRole().name()));
@@ -25,6 +27,10 @@ public final class UserAccountPrincipal implements UserDetails {
 
     public Integer getId() {
         return id;
+    }
+
+    public String getTenantId() {
+        return tenantId;
     }
 
     @Override
