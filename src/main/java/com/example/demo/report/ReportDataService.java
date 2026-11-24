@@ -157,7 +157,7 @@ public class ReportDataService {
                   join demo.selling_party sp on sp.id = vd.selling_party_id and sp.tenant_id = :tenantId
                   join demo.party_order_relation por on por.party_id = vd.id and por.tenant_id = :tenantId
                        and por.party_type = 'VENDOR_DELIVERY' and por.is_active is true and por.is_deleted is false
-                  join demo."order" o on o.id = por.order_id and o.isactive is true and o.isdeleted is false
+                  join demo."order" o on o.id = por.order_id and o.tenant_id = :tenantId and o.isactive is true and o.isdeleted is false
                  where d.tenant_id = :tenantId and d.isactive is true and d.isdeleted is false
                    and d.createdate::date between :fromDate and :toDate
                    and (cast(:tripId as integer) is null or o.trip_id = :tripId)

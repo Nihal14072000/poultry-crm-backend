@@ -36,9 +36,6 @@ public class AdminAccountInitializer implements ApplicationRunner {
             throw new IllegalStateException("Bootstrap admin credentials must be configured explicitly");
         }
         if (repository.existsByUsername(username)) return;
-        if (repository.existsByUsername(username)) {
-            throw new IllegalStateException("Configured bootstrap admin username already belongs to another account");
-        }
         UserAccount admin = new UserAccount();
         admin.setUsername(username);
         admin.setPasswordHash(passwordEncoder.encode(password));
