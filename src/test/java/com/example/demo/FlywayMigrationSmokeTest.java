@@ -43,7 +43,7 @@ class FlywayMigrationSmokeTest {
         String[] tenantTables = {
                 "user_account", "buying_party", "delievery", "delievery_party_relation",
                 "employee", "expenses", "finance_order_settlement", "finance_payment_allocation",
-                "mortality", "\\"order\\"", "order_type", "party_order_relation", "payment",
+                "mortality", "\"order\"", "order_type", "party_order_relation", "payment",
                 "selling_party", "supplier_pickup", "trip", "trip_party_relation", "vehicle",
                 "vendor_delievery", "generated_report"
         };
