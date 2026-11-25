@@ -39,8 +39,8 @@ class FinanceServiceTest {
         settlement.setId(3); settlement.setSellingPartyId(2); settlement.setBuyerDueAmount(BigDecimal.TEN);
         when(payments.findById(1)).thenReturn(Optional.of(payment));
         when(settlements.findById(3)).thenReturn(Optional.of(settlement));
-        when(allocations.sumAllocatedForPayment(1)).thenReturn(BigDecimal.ZERO);
-        when(allocations.sumCompletedForSettlement(3, "BUYER_RECEIPT")).thenReturn(BigDecimal.ZERO);
+        when(allocations.sumAllocatedForPayment(any(), org.mockito.ArgumentMatchers.eq(1))).thenReturn(BigDecimal.ZERO);
+        when(allocations.sumCompletedForSettlement(any(), org.mockito.ArgumentMatchers.eq(3), org.mockito.ArgumentMatchers.eq("BUYER_RECEIPT"))).thenReturn(BigDecimal.ZERO);
         when(allocations.save(any())).thenAnswer(call -> call.getArgument(0));
 
         var allocation = new FinancePaymentAllocation();

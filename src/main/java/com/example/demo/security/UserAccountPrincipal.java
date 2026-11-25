@@ -23,11 +23,15 @@ public final class UserAccountPrincipal implements UserDetails {
     }
 
     public UserAccountPrincipal(UserAccount account, String employeeType) {
+        this(account, employeeType, true);
+    }
+
+    public UserAccountPrincipal(UserAccount account, String employeeType, boolean tenantActive) {
         this.id = account.getId();
         this.tenantId = account.getTenantId() != null ? account.getTenantId() : TenantContext.DEFAULT_TENANT_ID;
         this.username = account.getUsername();
         this.password = account.getPasswordHash();
-        this.enabled = account.isEnabled();
+        this.enabled = account.isEnabled() && tenantActive;
         List<GrantedAuthority> granted = new ArrayList<>();
         granted.add(new SimpleGrantedAuthority("ROLE_" + account.getRole().name()));
         if (employeeType != null && !employeeType.isBlank()) {

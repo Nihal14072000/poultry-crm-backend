@@ -5,10 +5,12 @@ import com.example.demo.dto.EmployeeAccountResponse;
 import com.example.demo.dto.SignupRequest;
 import com.example.demo.entity.AppRole;
 import com.example.demo.entity.Employee;
+import com.example.demo.entity.Role;
 import com.example.demo.entity.UserAccount;
 import com.example.demo.repository.EmployeeRepository;
 import com.example.demo.service.EmployeeAccountService;
 import com.example.demo.service.EmployeeUserDetailsService;
+import com.example.demo.service.RoleService;
 import com.example.demo.service.SignupService;
 import com.example.demo.repository.UserAccountRepository;
 import jakarta.validation.Valid;
@@ -39,19 +41,22 @@ public class AuthController {
     private final EmployeeUserDetailsService userDetailsService;
     private final UserAccountRepository accounts;
     private final EmployeeRepository employees;
+    private final RoleService roleService;
 
     public AuthController(
             SignupService signupService,
             EmployeeAccountService employeeAccountService,
             EmployeeUserDetailsService userDetailsService,
             UserAccountRepository accounts,
-            EmployeeRepository employees
+            EmployeeRepository employees,
+            RoleService roleService
     ) {
         this.signupService = signupService;
         this.employeeAccountService = employeeAccountService;
         this.userDetailsService = userDetailsService;
         this.accounts = accounts;
         this.employees = employees;
+        this.roleService = roleService;
     }
 
     @PostMapping("/signup")
@@ -61,7 +66,7 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public Map<String, String> me(Principal principal) {
+    public Map<String, Object> me(Principal principal) {
         if (userDetailsService.isSuperuser(principal.getName())) {
             return Map.of(
                     "id", "0",
@@ -78,6 +83,17 @@ public class AuthController {
         String displayName = employee != null && employee.getName() != null && !employee.getName().isBlank()
                 ? employee.getName()
                 : account.getUsername();
+        Role dbRole = roleService.resolveRole(account, employee).orElse(null);
+        if (dbRole != null) {
+            return Map.of(
+                    "id", resolvedId,
+                    "name", displayName,
+                    "username", account.getUsername(),
+                    "role", dbRole.getName(),
+                    "resources", dbRole.getResources(),
+                    "actions", dbRole.getActions()
+            );
+        }
         return Map.of(
                 "id", resolvedId,
                 "name", displayName,
