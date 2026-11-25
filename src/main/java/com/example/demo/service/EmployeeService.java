@@ -22,7 +22,7 @@ public class EmployeeService extends CrudService<Employee> {
     @Transactional
     public Employee create(Employee employee){
         String username = accountProvisioner.validateNameForAccount(employee.getName());
-        employee.setName(username);
+        employee.setName(employee.getName().trim());
         AuditSupport.markCreated(employee);
         Employee savedEmployee = employeeRepository.save(employee);
         accountProvisioner.createAccount(savedEmployee, username);

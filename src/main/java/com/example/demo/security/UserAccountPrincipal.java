@@ -5,8 +5,10 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 
 public final class UserAccountPrincipal implements UserDetails {
     private final Integer id;
@@ -16,11 +18,20 @@ public final class UserAccountPrincipal implements UserDetails {
     private final Collection<? extends GrantedAuthority> authorities;
 
     public UserAccountPrincipal(UserAccount account) {
+        this(account, null);
+    }
+
+    public UserAccountPrincipal(UserAccount account, String employeeType) {
         this.id = account.getId();
         this.username = account.getUsername();
         this.password = account.getPasswordHash();
         this.enabled = account.isEnabled();
-        this.authorities = List.of(new SimpleGrantedAuthority("ROLE_" + account.getRole().name()));
+        List<GrantedAuthority> granted = new ArrayList<>();
+        granted.add(new SimpleGrantedAuthority("ROLE_" + account.getRole().name()));
+        if (employeeType != null && !employeeType.isBlank()) {
+            granted.add(new SimpleGrantedAuthority("ROLE_" + employeeType.trim().toUpperCase(Locale.ROOT)));
+        }
+        this.authorities = List.copyOf(granted);
     }
 
     public Integer getId() {

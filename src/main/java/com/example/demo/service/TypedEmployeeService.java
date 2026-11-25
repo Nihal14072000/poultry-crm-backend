@@ -47,7 +47,7 @@ public abstract class TypedEmployeeService extends CrudService<Employee> {
     @Transactional
     public Employee create(Employee employee){
         String username = accountProvisioner.validateNameForAccount(employee.getName());
-        employee.setName(username);
+        employee.setName(employee.getName().trim());
         employee.setType(employeeType);
         AuditSupport.markCreated(employee);
         Employee savedEmployee = repository.save(employee);
