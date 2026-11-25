@@ -66,6 +66,24 @@ public class TripService extends CrudService<Trip> {
     }
 
     @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<Trip> findPage(
+            int page, int size, Integer driverId, Integer supervisorId) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), 100);
+        var pageable = org.springframework.data.domain.PageRequest.of(
+                safePage,
+                safeSize,
+                org.springframework.data.domain.Sort.by(
+                        org.springframework.data.domain.Sort.Order.desc("createDate").nullsLast(),
+                        org.springframework.data.domain.Sort.Order.desc("tripId")));
+        return tripRepository.findPage(
+                com.example.demo.security.TenantContext.requireTenantId(),
+                driverId,
+                supervisorId,
+                pageable);
+    }
+
+    @Transactional(readOnly = true)
     public Optional<TripRetrieveResponse> retrieve(Integer tripId) {
         return findById(tripId)
                 .map(this::toResponse);

@@ -11,8 +11,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -24,9 +26,36 @@ public class ExpensesController {
         this.service = service;
     }
 
+    public record PagedExpensesResponse(
+            List<Expenses> items,
+            int page,
+            int size,
+            long totalElements,
+            int totalPages,
+            BigDecimal totalAmount
+    ) {}
+
     @GetMapping
     public List<Expenses> findAll() {
         return service.findAll();
+    }
+
+    @GetMapping("/paged")
+    public PagedExpensesResponse findPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) Integer tripId,
+            @RequestParam(required = false) String query
+    ) {
+        var result = service.findPage(page, size, tripId, query);
+        return new PagedExpensesResponse(
+                result.getContent(),
+                result.getNumber(),
+                result.getSize(),
+                result.getTotalElements(),
+                result.getTotalPages(),
+                service.sumAmount(tripId, query)
+        );
     }
 
     /**
