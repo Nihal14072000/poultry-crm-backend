@@ -23,8 +23,10 @@ public class MortalityService extends CrudService<Mortality> {
 
     @Transactional(readOnly = true)
     public List<Mortality> findByTripId(Integer tripId) {
+        long tenantId = com.example.demo.security.TenantContext.requireTenantId();
         List<Mortality> mortalities = CreatedRecord.newestFirst(repository.findByTripId(tripId).stream()
                 .filter(ActiveRecord::isActiveRecord)
+                .filter(m -> java.util.Objects.equals(m.getTenantId(), tenantId))
                 .toList());
         log.info("Retrieved {} active mortality records for tripId={}", mortalities.size(), tripId);
         return mortalities;

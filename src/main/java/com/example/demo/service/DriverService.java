@@ -20,6 +20,6 @@ public class DriverService extends TypedEmployeeService {
 
     @Transactional(readOnly = true)
     public List<Employee> findAssignedToVehicle(Integer vehicleId) {
-        return repository.findDistinctAssignedToVehicle(vehicleId, DRIVER_TYPE);
+        return repository.findDistinctAssignedToVehicle(vehicleId, DRIVER_TYPE, com.example.demo.security.TenantContext.requireTenantId());
     }
 }

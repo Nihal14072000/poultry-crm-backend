@@ -17,20 +17,23 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
 
     @Query("""
             select o from Order o
-            where o.isActive = true
+            where o.tenantId = :tenantId
+              and o.isActive = true
               and o.isDeleted = false
               and (:startDate is null or o.createDate >= :startDate)
               and (:endDateExclusive is null or o.createDate < :endDateExclusive)
             order by case when o.createDate is null then 1 else 0 end, o.createDate desc
             """)
     List<Order> findActiveInDateRange(
+            @Param("tenantId") Long tenantId,
             @Param("startDate") LocalDateTime startDate,
             @Param("endDateExclusive") LocalDateTime endDateExclusive
     );
 
     @Query("""
             select o from Order o
-            where o.isActive = true
+            where o.tenantId = :tenantId
+              and o.isActive = true
               and o.isDeleted = false
               and exists (
                   select relation.relationId
@@ -44,6 +47,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             order by case when o.createDate is null then 1 else 0 end, o.createDate desc
             """)
     List<Order> findActiveByPartyIdAndPartyType(
+            @Param("tenantId") Long tenantId,
             @Param("partyId") Integer partyId,
             @Param("partyType") String partyType
     );
@@ -51,7 +55,8 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     @Query("""
             select coalesce(sum(coalesce(o.weight, 0) * coalesce(o.rate, 0)), 0)
             from Order o
-            where o.isActive = true
+            where o.tenantId = :tenantId
+              and o.isActive = true
               and o.isDeleted = false
               and exists (
                   select relation.relationId
@@ -64,13 +69,15 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
               )
             """)
     BigDecimal sumActiveOrderWeightTimesRateByPartyIdAndPartyType(
+            @Param("tenantId") Long tenantId,
             @Param("partyId") Integer partyId,
             @Param("partyType") String partyType
     );
 
     @Query("""
             select o from Order o
-            where o.isActive = true
+            where o.tenantId = :tenantId
+              and o.isActive = true
               and o.isDeleted = false
               and (:startDate is null or o.createDate >= :startDate)
               and (:endDateExclusive is null or o.createDate < :endDateExclusive)
@@ -86,6 +93,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             order by case when o.createDate is null then 1 else 0 end, o.createDate desc
             """)
     List<Order> findActiveByPartyIdAndPartyTypeInDateRange(
+            @Param("tenantId") Long tenantId,
             @Param("partyId") Integer partyId,
             @Param("partyType") String partyType,
             @Param("startDate") LocalDateTime startDate,
@@ -94,7 +102,8 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
 
     @Query("""
             select o from Order o
-            where o.tripId = :tripId
+            where o.tenantId = :tenantId
+              and o.tripId = :tripId
               and o.isActive = true
               and o.isDeleted = false
               and exists (
@@ -109,6 +118,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             order by case when o.createDate is null then 1 else 0 end, o.createDate desc
             """)
     List<Order> findActiveByTripIdAndPartyIdAndPartyType(
+            @Param("tenantId") Long tenantId,
             @Param("tripId") Integer tripId,
             @Param("partyId") Integer partyId,
             @Param("partyType") String partyType

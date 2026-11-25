@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PdfReportRendererTest {
     @Test
     void rendersAValidPdfWithReportHeadingAndRows() {
-        ReportJob job = new ReportJob(1L, "SALES", LocalDate.of(2026, 11, 1),
+        ReportJob job = new ReportJob(1L, 1L, "SALES", LocalDate.of(2026, 11, 1),
                 LocalDate.of(2026, 11, 21), "PDF", "PROCESSING", Map.of(), 7,
                 null, null, null, LocalDate.now().atStartOfDay(), null);
         ReportData data = new ReportData("Sales Report", List.of("report_date", "party_name", "amount"),

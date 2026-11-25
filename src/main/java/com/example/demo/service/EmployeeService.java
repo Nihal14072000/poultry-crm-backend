@@ -2,10 +2,11 @@ package com.example.demo.service;
 
 import com.example.demo.entity.Employee;
 import com.example.demo.repository.EmployeeRepository;
+import com.example.demo.security.TenantContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.concurrent.ExecutionException;
+import java.util.Objects;
 
 @Service
 public class EmployeeService extends CrudService<Employee> {
@@ -22,6 +23,7 @@ public class EmployeeService extends CrudService<Employee> {
     @Transactional
     public Employee create(Employee employee){
         String username = accountProvisioner.validateNameForAccount(employee.getName());
+        employee.setTenantId(TenantContext.requireTenantId());
         employee.setName(employee.getName().trim());
         AuditSupport.markCreated(employee);
         Employee savedEmployee = employeeRepository.save(employee);
@@ -32,7 +34,8 @@ public class EmployeeService extends CrudService<Employee> {
     @Override
     @Transactional
     public boolean delete(Integer id) {
-        if (!employeeRepository.existsById(id)) {
+        long tenantId = TenantContext.requireTenantId();
+        if (employeeRepository.findById(id).filter(e -> Objects.equals(e.getTenantId(), tenantId)).isEmpty()) {
             return false;
         }
         accountProvisioner.deleteAccount(id);

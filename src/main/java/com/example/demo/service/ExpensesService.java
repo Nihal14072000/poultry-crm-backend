@@ -21,7 +21,10 @@ public class ExpensesService extends CrudService<Expenses> {
         if (tripId == null || tripId <= 0) {
             throw new IllegalArgumentException("Trip ID must be a positive integer.");
         }
-        return repository.findByTripIdAndIsActiveTrueAndIsDeletedFalseOrderByExpenseDateDescIdDesc(tripId);
+        long tenantId = com.example.demo.security.TenantContext.requireTenantId();
+        return repository.findByTripIdAndIsActiveTrueAndIsDeletedFalseOrderByExpenseDateDescIdDesc(tripId).stream()
+                .filter(e -> java.util.Objects.equals(e.getTenantId(), tenantId))
+                .toList();
     }
 
     @Transactional
