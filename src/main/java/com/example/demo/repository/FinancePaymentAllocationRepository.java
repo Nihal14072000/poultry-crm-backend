@@ -16,13 +16,14 @@ public interface FinancePaymentAllocationRepository extends JpaRepository<Financ
     @Modifying
     @Query("""
             delete from FinancePaymentAllocation a
-            where a.paymentId in (select p.id from Payment p where p.tripId = :tripId)
+            where a.tenantId = :tenantId
+              and a.paymentId in (select p.id from Payment p where p.tripId = :tripId and p.tenantId = :tenantId)
             """)
-    void deleteByPaymentTripId(@Param("tripId") Integer tripId);
+    void deleteByPaymentTripId(@Param("tenantId") Long tenantId, @Param("tripId") Integer tripId);
 
-    @Query("select coalesce(sum(a.allocatedAmount), 0) from FinancePaymentAllocation a where a.paymentId = :paymentId")
-    BigDecimal sumAllocatedForPayment(@Param("paymentId") Integer paymentId);
+    @Query("select coalesce(sum(a.allocatedAmount), 0) from FinancePaymentAllocation a where a.tenantId = :tenantId and a.paymentId = :paymentId")
+    BigDecimal sumAllocatedForPayment(@Param("tenantId") Long tenantId, @Param("paymentId") Integer paymentId);
 
-    @Query("select coalesce(sum(a.allocatedAmount), 0) from FinancePaymentAllocation a join Payment p on p.id = a.paymentId where a.settlementId = :settlementId and a.allocationType = :type and p.status = 'COMPLETED'")
-    BigDecimal sumCompletedForSettlement(@Param("settlementId") Integer settlementId, @Param("type") String type);
+    @Query("select coalesce(sum(a.allocatedAmount), 0) from FinancePaymentAllocation a join Payment p on p.id = a.paymentId where a.tenantId = :tenantId and a.settlementId = :settlementId and a.allocationType = :type and p.status = 'COMPLETED'")
+    BigDecimal sumCompletedForSettlement(@Param("tenantId") Long tenantId, @Param("settlementId") Integer settlementId, @Param("type") String type);
 }

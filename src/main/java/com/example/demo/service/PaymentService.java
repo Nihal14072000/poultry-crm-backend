@@ -192,11 +192,11 @@ public class PaymentService extends CrudService<Payment> {
         List<PartyOrderRelation> buyingOrderRelations = buyingPartyIds.isEmpty()
                 ? List.of()
                 : partyOrderRelationRepository.findActiveByPartyIdsAndPartyType(
-                        buyingPartyIds, "B");
+                        tenantId, buyingPartyIds, "B");
         List<PartyOrderRelation> sellingOrderRelations = sellingPartyIds.isEmpty()
                 ? List.of()
                 : partyOrderRelationRepository.findActiveByPartyIdsAndPartyType(
-                        sellingPartyIds, "S");
+                        tenantId, sellingPartyIds, "S");
 
         Set<Integer> orderIds = payments.stream()
                 .map(Payment::getActualOrderId)
@@ -223,6 +223,7 @@ public class PaymentService extends CrudService<Payment> {
         Set<Integer> paymentIds = payments.stream().map(Payment::getId).collect(Collectors.toSet());
         Map<Integer, List<com.example.demo.entity.FinancePaymentAllocation>> allocationsByPayment =
                 allocationRepository.findByPaymentIdIn(paymentIds).stream()
+                        .filter(a -> java.util.Objects.equals(a.getTenantId(), tenantId))
                         .collect(Collectors.groupingBy(
                                 com.example.demo.entity.FinancePaymentAllocation::getPaymentId));
 
@@ -243,7 +244,10 @@ public class PaymentService extends CrudService<Payment> {
 
     @Transactional(readOnly = true)
     public List<Payment> findActiveEntitiesByTripId(Integer tripId) {
-        return repository.findActiveByTripIdOrderByCreateDateDesc(tripId);
+        long tenantId = com.example.demo.security.TenantContext.requireTenantId();
+        return repository.findActiveByTripIdOrderByCreateDateDesc(tripId).stream()
+                .filter(p -> java.util.Objects.equals(p.getTenantId(), tenantId))
+                .toList();
     }
 
     private Map<Integer, List<Order>> groupActiveOrdersByParty(
@@ -381,13 +385,16 @@ public class PaymentService extends CrudService<Payment> {
                     .map(this::toSellingPartyDto)
                     .orElse(null);
 
+            long tenantId = com.example.demo.security.TenantContext.requireTenantId();
             return PaymentRetrieveResponse.from(
                     payment,
                     buyingParty,
                     actualOrder,
                     trip,
                     sellingParty,
-                    allocationRepository.findByPaymentId(payment.getId())
+                    allocationRepository.findByPaymentId(payment.getId()).stream()
+                            .filter(a -> java.util.Objects.equals(a.getTenantId(), tenantId))
+                            .toList()
             );
 
         } catch (Exception e) {
@@ -501,7 +508,8 @@ public class PaymentService extends CrudService<Payment> {
 
     @Transactional
     public void deleteByTripId(Integer tripId) {
-        allocationRepository.deleteByPaymentTripId(tripId);
+        long tenantId = com.example.demo.security.TenantContext.requireTenantId();
+        allocationRepository.deleteByPaymentTripId(tenantId, tripId);
         repository.deleteByTripId(tripId);
     }
 

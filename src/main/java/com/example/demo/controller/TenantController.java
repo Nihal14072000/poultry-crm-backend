@@ -2,11 +2,13 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.TenantRequest;
 import com.example.demo.entity.AppRole;
+import com.example.demo.entity.Role;
 import com.example.demo.entity.Tenant;
 import com.example.demo.entity.UserAccount;
 import com.example.demo.repository.TenantRepository;
 import com.example.demo.repository.UserAccountRepository;
 import com.example.demo.service.EmployeeAccountProvisioner;
+import com.example.demo.service.RoleService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -31,11 +33,18 @@ public class TenantController {
     private final TenantRepository tenants;
     private final UserAccountRepository users;
     private final PasswordEncoder passwordEncoder;
+    private final RoleService roleService;
 
-    public TenantController(TenantRepository tenants, UserAccountRepository users, PasswordEncoder passwordEncoder) {
+    public TenantController(
+            TenantRepository tenants,
+            UserAccountRepository users,
+            PasswordEncoder passwordEncoder,
+            RoleService roleService
+    ) {
         this.tenants = tenants;
         this.users = users;
         this.passwordEncoder = passwordEncoder;
+        this.roleService = roleService;
     }
 
     @GetMapping
@@ -62,6 +71,7 @@ public class TenantController {
         tenant.setName(name);
         tenant.setActive(request.isActive() == null || request.isActive());
         Tenant saved = tenants.save(tenant);
+        Role adminRole = roleService.seedDefaultsForTenant(saved.getId());
 
         String username;
         String rawPassword;
@@ -92,6 +102,7 @@ public class TenantController {
         admin.setUsername(username);
         admin.setPasswordHash(passwordEncoder.encode(rawPassword));
         admin.setRole(AppRole.ADMIN);
+        admin.setRoleId(adminRole.getId());
         admin.setEnabled(true);
         users.save(admin);
         saved.setAdminUsername(username);

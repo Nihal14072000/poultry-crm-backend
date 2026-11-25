@@ -12,12 +12,14 @@ public interface PartyOrderRelationRepository extends JpaRepository<PartyOrderRe
     @Query("""
             select relation
             from PartyOrderRelation relation
-            where relation.partyId in :partyIds
+            where relation.tenantId = :tenantId
+              and relation.partyId in :partyIds
               and relation.partyType = :partyType
               and relation.isActive = true
               and relation.isDeleted = false
             """)
     List<PartyOrderRelation> findActiveByPartyIdsAndPartyType(
+            @Param("tenantId") Long tenantId,
             @Param("partyIds") Collection<Integer> partyIds,
             @Param("partyType") String partyType
     );

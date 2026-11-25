@@ -3,11 +3,13 @@ package com.example.demo.service;
 import com.example.demo.entity.Order;
 import com.example.demo.entity.PartyOrderRelation;
 import com.example.demo.repository.PartyOrderRelationRepository;
+import com.example.demo.security.TenantContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -119,10 +121,13 @@ public class PartyOrderRelationService {
     ) {
         // Trip orders must be isolated by trip. A null tripId is reserved for
         // actual pickup/delivery records, whose party IDs are their record IDs.
-        if (tripId == null) {
-            return repository.findByPartyIdAndPartyType(partyId, partyType);
-        }
-        return repository.findByPartyIdAndPartyTypeAndTripId(partyId, partyType, tripId);
+        long tenantId = TenantContext.requireTenantId();
+        List<PartyOrderRelation> relations = tripId == null
+                ? repository.findByPartyIdAndPartyType(partyId, partyType)
+                : repository.findByPartyIdAndPartyTypeAndTripId(partyId, partyType, tripId);
+        return relations.stream()
+                .filter(relation -> Objects.equals(relation.getTenantId(), tenantId))
+                .toList();
     }
 
     private Order saveOrderForTrip(Order requestedOrder, Integer tripId) {
