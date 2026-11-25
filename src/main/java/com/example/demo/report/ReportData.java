@@ -5,4 +5,10 @@ import java.util.List;
 import java.util.Map;
 
 public record ReportData(String title, List<String> columns, List<Map<String, Object>> rows,
-                         long recordCount, BigDecimal totalAmount, BigDecimal totalQuantity) {}
+                         long recordCount, BigDecimal totalAmount, BigDecimal totalQuantity,
+                         Map<String, BigDecimal> summaryTotals) {
+    public ReportData(String title, List<String> columns, List<Map<String, Object>> rows,
+                      long recordCount, BigDecimal totalAmount, BigDecimal totalQuantity) {
+        this(title, columns, rows, recordCount, totalAmount, totalQuantity, Map.of());
+    }
+}

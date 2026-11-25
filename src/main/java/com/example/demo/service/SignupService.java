@@ -33,14 +33,17 @@ public class SignupService {
 
     @Transactional
     public EmployeeAccountResponse signup(SignupRequest request) {
-        String username = request.username().trim();
-        if (username.contains(":")) {
+        if (request.username().contains(":")) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username must not contain ':'");
+        }
+        String username = EmployeeAccountProvisioner.normalizeUsername(request.username());
+        if (username.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username must not be blank");
         }
         if (request.password().getBytes(StandardCharsets.UTF_8).length > 72) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password must be at most 72 UTF-8 bytes");
         }
-        if (userAccountRepository.existsByUsername(username)) {
+        if (userAccountRepository.existsByNormalizedUsername(username)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Username is already in use");
         }
 

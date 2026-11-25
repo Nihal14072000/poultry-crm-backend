@@ -38,7 +38,7 @@ class SignupServiceTest {
 
     @Test
     void createsEmployeeAndLinkedEmployeeAccount() {
-        when(userAccountRepository.existsByUsername("asha")).thenReturn(false);
+        when(userAccountRepository.existsByNormalizedUsername("ashakumar")).thenReturn(false);
         when(employeeRepository.save(any(Employee.class))).thenAnswer(invocation -> {
             Employee employee = invocation.getArgument(0);
             employee.setId(42);
@@ -52,14 +52,14 @@ class SignupServiceTest {
         });
 
         EmployeeAccountResponse response = signupService.signup(new SignupRequest(
-                " asha ",
+                " Asha Kumar ",
                 "a-long-unique-password",
                 " Asha Kumar ",
                 "Pune",
                 "9876543210"
         ));
 
-        assertEquals(new EmployeeAccountResponse(17, "asha", 42, "EMPLOYEE"), response);
+        assertEquals(new EmployeeAccountResponse(17, "ashakumar", 42, "EMPLOYEE"), response);
         ArgumentCaptor<Employee> employeeCaptor = ArgumentCaptor.forClass(Employee.class);
         verify(employeeRepository).save(employeeCaptor.capture());
         assertEquals("Asha Kumar", employeeCaptor.getValue().getName());
@@ -75,10 +75,10 @@ class SignupServiceTest {
 
     @Test
     void rejectsDuplicateUsernameWithoutCreatingEmployee() {
-        when(userAccountRepository.existsByUsername("asha")).thenReturn(true);
+        when(userAccountRepository.existsByNormalizedUsername("asha")).thenReturn(true);
 
         assertThrows(ResponseStatusException.class, () -> signupService.signup(new SignupRequest(
-                "asha",
+                "A s h a",
                 "a-long-unique-password",
                 "Asha Kumar",
                 null,
