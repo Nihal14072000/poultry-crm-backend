@@ -94,6 +94,29 @@ public class PaymentService extends CrudService<Payment> {
     }
 
     @Transactional(readOnly = true)
+    public com.example.demo.dto.PagedResponse<PaymentRetrieveResponse> retrievePaged(
+            int page, int size, Integer tripId, String status, String paymentType, Integer partyId, String query) {
+        var pageable = org.springframework.data.domain.PageRequest.of(
+                Math.max(page, 0),
+                Math.min(Math.max(size, 1), 100),
+                org.springframework.data.domain.Sort.by(
+                        org.springframework.data.domain.Sort.Order.desc("createDate").nullsLast(),
+                        org.springframework.data.domain.Sort.Order.desc("id")));
+        String q = (query == null || query.isBlank()) ? null : "%" + query.trim().toLowerCase() + "%";
+        String normStatus = (status == null || status.isBlank()) ? null : status.trim();
+        String normType = (paymentType == null || paymentType.isBlank()) ? null : paymentType.trim();
+        var result = repository.findPage(
+                com.example.demo.security.TenantContext.requireTenantId(),
+                tripId,
+                normStatus,
+                normType,
+                partyId,
+                q,
+                pageable);
+        return com.example.demo.dto.PagedResponse.from(result.map(this::toRetrieveResponse));
+    }
+
+    @Transactional(readOnly = true)
     public List<PaymentRetrieveResponse> retrieveByParty(Integer partyId, String partyTyp) {
         List<Payment> payments;
         if ("B".equals(partyTyp)) {

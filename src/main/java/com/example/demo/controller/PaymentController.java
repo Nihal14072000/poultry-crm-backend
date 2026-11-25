@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.PagedResponse;
 import com.example.demo.dto.PaymentRetrieveResponse;
 import com.example.demo.dto.PaymentSumResponse;
 import com.example.demo.dto.PaymentWriteRequest;
@@ -48,6 +49,19 @@ public class PaymentController {
             return ResponseEntity.badRequest().build();
         }
         return ResponseEntity.ok(service.retrieveByParty(partyId, partyTyp));
+    }
+
+    @GetMapping("/retrieve/paged")
+    public PagedResponse<PaymentRetrieveResponse> retrievePaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) Integer tripId,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String paymentType,
+            @RequestParam(required = false) Integer partyId,
+            @RequestParam(required = false) String query
+    ) {
+        return service.retrievePaged(page, size, tripId, status, paymentType, partyId, query);
     }
 
     @GetMapping("/party/sum")

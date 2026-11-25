@@ -6,8 +6,11 @@ import com.example.demo.dto.SignupRequest;
 import com.example.demo.entity.AppRole;
 import com.example.demo.entity.Employee;
 import com.example.demo.entity.Role;
+import com.example.demo.entity.Tenant;
 import com.example.demo.entity.UserAccount;
 import com.example.demo.repository.EmployeeRepository;
+import com.example.demo.repository.TenantRepository;
+import com.example.demo.security.TenantContext;
 import com.example.demo.service.EmployeeAccountService;
 import com.example.demo.service.EmployeeUserDetailsService;
 import com.example.demo.service.RoleService;
@@ -41,6 +44,7 @@ public class AuthController {
     private final EmployeeUserDetailsService userDetailsService;
     private final UserAccountRepository accounts;
     private final EmployeeRepository employees;
+    private final TenantRepository tenants;
     private final RoleService roleService;
 
     public AuthController(
@@ -49,6 +53,7 @@ public class AuthController {
             EmployeeUserDetailsService userDetailsService,
             UserAccountRepository accounts,
             EmployeeRepository employees,
+            TenantRepository tenants,
             RoleService roleService
     ) {
         this.signupService = signupService;
@@ -56,6 +61,7 @@ public class AuthController {
         this.userDetailsService = userDetailsService;
         this.accounts = accounts;
         this.employees = employees;
+        this.tenants = tenants;
         this.roleService = roleService;
     }
 
@@ -83,12 +89,15 @@ public class AuthController {
         String displayName = employee != null && employee.getName() != null && !employee.getName().isBlank()
                 ? employee.getName()
                 : account.getUsername();
+        long tenantId = account.getTenantId() != null ? account.getTenantId() : TenantContext.DEFAULT_TENANT_ID;
+        String tenantName = tenants.findById(tenantId).map(Tenant::getName).orElse("");
         Role dbRole = roleService.resolveRole(account, employee).orElse(null);
         if (dbRole != null) {
             return Map.of(
                     "id", resolvedId,
                     "name", displayName,
                     "username", account.getUsername(),
+                    "tenantName", tenantName,
                     "role", dbRole.getName(),
                     "resources", dbRole.getResources(),
                     "actions", dbRole.getActions()
@@ -98,6 +107,7 @@ public class AuthController {
                 "id", resolvedId,
                 "name", displayName,
                 "username", account.getUsername(),
+                "tenantName", tenantName,
                 "role", resolveRole(account, employee)
         );
     }

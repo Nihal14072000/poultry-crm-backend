@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
@@ -40,9 +41,34 @@ public class TripController {
         this.tripDeliveryDetailsService = tripDeliveryDetailsService;
     }
 
+    public record PagedTripsResponse(
+            List<Trip> items,
+            int page,
+            int size,
+            long totalElements,
+            int totalPages
+    ) {}
+
     @GetMapping
     public List<Trip> findAll() {
         return service.findAll();
+    }
+
+    @GetMapping("/paged")
+    public PagedTripsResponse findPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) Integer driverId,
+            @RequestParam(required = false) Integer supervisorId
+    ) {
+        var result = service.findPage(page, size, driverId, supervisorId);
+        return new PagedTripsResponse(
+                result.getContent(),
+                result.getNumber(),
+                result.getSize(),
+                result.getTotalElements(),
+                result.getTotalPages()
+        );
     }
 
     @GetMapping("/{id}")
