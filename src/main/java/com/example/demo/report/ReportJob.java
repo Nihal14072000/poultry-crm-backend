@@ -6,6 +6,7 @@ import java.util.Map;
 
 public record ReportJob(
         Long id,
+        Long tenantId,
         String reportType,
         LocalDate fromDate,
         LocalDate toDate,

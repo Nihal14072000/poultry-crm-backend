@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Table(name = "mortality", schema = "demo")
 @Data
 @NoArgsConstructor
-public class Mortality implements ActiveRecord, AuditableRecord {
+public class Mortality extends TenantEntity implements ActiveRecord, AuditableRecord {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;

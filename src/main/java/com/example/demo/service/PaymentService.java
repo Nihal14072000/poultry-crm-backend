@@ -104,8 +104,10 @@ public class PaymentService extends CrudService<Payment> {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported party type");
         }
 
+        long tenantId = com.example.demo.security.TenantContext.requireTenantId();
         payments = CreatedRecord.newestFirst(payments.stream()
                 .filter(ActiveRecord::isActiveRecord)
+                .filter(p -> java.util.Objects.equals(p.getTenantId(), tenantId))
                 .toList());
         log.info("Retrieved {} active payments for partyId={}, partyTyp={}",
                 payments.size(), partyId, partyTyp);
@@ -130,7 +132,7 @@ public class PaymentService extends CrudService<Payment> {
         }
 
         BigDecimal total = repository.sumCompletedPaymentsByParty(
-                partyId, partyType, startDate, endDate);
+                com.example.demo.security.TenantContext.requireTenantId(), partyId, partyType, startDate, endDate);
         return new PaymentSumResponse(
                 partyId,
                 partyType,
@@ -142,7 +144,10 @@ public class PaymentService extends CrudService<Payment> {
 
     @Transactional(readOnly = true)
     public List<PaymentRetrieveResponse> retrieveByTripId(Integer tripId) {
-        List<Payment> payments = repository.findActiveByTripIdOrderByCreateDateDesc(tripId);
+        long tenantId = com.example.demo.security.TenantContext.requireTenantId();
+        List<Payment> payments = repository.findActiveByTripIdOrderByCreateDateDesc(tripId).stream()
+                .filter(p -> java.util.Objects.equals(p.getTenantId(), tenantId))
+                .toList();
         if (payments.isEmpty()) {
             log.info("Retrieved 0 active payments for tripId={}", tripId);
             return List.of();
@@ -470,6 +475,7 @@ public class PaymentService extends CrudService<Payment> {
     @Transactional
     public Payment create(Payment payment) {
         validate(payment);
+        payment.setTenantId(com.example.demo.security.TenantContext.requireTenantId());
         AuditSupport.markCreated(payment);
         if (payment.getStatus() == null) payment.setStatus("PENDING");
         return repository.save(payment);
@@ -478,10 +484,14 @@ public class PaymentService extends CrudService<Payment> {
     @Override
     @Transactional
     public java.util.Optional<Payment> update(Integer id, Payment payment) {
-        if (!repository.existsById(id)) return java.util.Optional.empty();
+        long tenantId = com.example.demo.security.TenantContext.requireTenantId();
+        Payment existing = repository.findById(id)
+                .filter(p -> java.util.Objects.equals(p.getTenantId(), tenantId))
+                .orElse(null);
+        if (existing == null) return java.util.Optional.empty();
         validate(payment);
         payment.setId(id);
-        Payment existing = repository.findById(id).orElseThrow();
+        payment.setTenantId(tenantId);
         // These fields are server-managed and must survive an ordinary payment update.
         payment.setIsActive(existing.getIsActive());
         payment.setIsDeleted(existing.getIsDeleted());

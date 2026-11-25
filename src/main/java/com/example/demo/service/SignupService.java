@@ -7,6 +7,7 @@ import com.example.demo.entity.Employee;
 import com.example.demo.entity.UserAccount;
 import com.example.demo.repository.EmployeeRepository;
 import com.example.demo.repository.UserAccountRepository;
+import com.example.demo.security.TenantContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -48,6 +49,7 @@ public class SignupService {
         }
 
         Employee employee = new Employee();
+        employee.setTenantId(TenantContext.DEFAULT_TENANT_ID);
         employee.setName(request.name().trim());
         employee.setAddress(request.address());
         employee.setNumber(request.number());
@@ -57,6 +59,7 @@ public class SignupService {
         Employee savedEmployee = employeeRepository.save(employee);
 
         UserAccount account = new UserAccount();
+        account.setTenantId(TenantContext.DEFAULT_TENANT_ID);
         account.setUsername(username);
         account.setPasswordHash(passwordEncoder.encode(request.password()));
         account.setRole(AppRole.EMPLOYEE);

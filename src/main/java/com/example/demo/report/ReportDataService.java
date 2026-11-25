@@ -28,12 +28,13 @@ public class ReportDataService {
         Integer partyId = integerFilter(filters, "partyId");
         String paymentType = stringFilter(filters, "paymentType");
         String paymentStatus = stringFilter(filters, "status");
+        long tenantId = job.tenantId() != null ? job.tenantId() : 1L;
         List<Map<String, Object>> rows = switch (ReportType.valueOf(job.reportType())) {
-            case SALES -> sales(job.fromDate(), job.toDate(), tripId, partyId);
-            case PURCHASE -> purchases(job.fromDate(), job.toDate(), tripId, partyId);
-            case PAYMENTS -> payments(job.fromDate(), job.toDate(), tripId, partyId, paymentType, paymentStatus);
-            case OUTSTANDING -> outstanding(job.toDate(), partyId);
-            case DELIVERIES -> deliveries(job.fromDate(), job.toDate(), tripId, partyId);
+            case SALES -> sales(tenantId, job.fromDate(), job.toDate(), tripId, partyId);
+            case PURCHASE -> purchases(tenantId, job.fromDate(), job.toDate(), tripId, partyId);
+            case PAYMENTS -> payments(tenantId, job.fromDate(), job.toDate(), tripId, partyId, paymentType, paymentStatus);
+            case OUTSTANDING -> outstanding(tenantId, job.toDate(), partyId);
+            case DELIVERIES -> deliveries(tenantId, job.fromDate(), job.toDate(), tripId, partyId);
             case TRIP_SUMMARY -> throw new IllegalStateException("Trip Summary dispatch should have returned earlier");
         };
         List<String> columns = rows.isEmpty() ? defaultColumns(job.reportType()) : List.copyOf(rows.get(0).keySet());
@@ -45,7 +46,7 @@ public class ReportDataService {
                 columns, rows, rows.size(), amount, quantity);
     }
 
-    private List<Map<String, Object>> sales(LocalDate from, LocalDate to, Integer tripId, Integer partyId) {
+    private List<Map<String, Object>> sales(long tenantId, LocalDate from, LocalDate to, Integer tripId, Integer partyId) {
         return query("""
                 select coalesce(vd.create_date::date, o.createdate::date) as report_date,
                        vd.id as delivery_id, sp.name as party_name, o.trip_id,
@@ -56,7 +57,8 @@ public class ReportDataService {
                   join demo.party_order_relation por on por.party_id = vd.id
                        and por.party_type = 'VENDOR_DELIVERY' and por.is_active is true and por.is_deleted is false
                   join demo."order" o on o.id = por.order_id and o.isactive is true and o.isdeleted is false
-                 where vd.isactive is true and vd.isdeleted is false
+                 where vd.tenant_id = :tenantId
+                   and vd.isactive is true and vd.isdeleted is false
                    and coalesce(vd.create_date::date, o.createdate::date) between :fromDate and :toDate
                    and (cast(:tripId as integer) is null or o.trip_id = :tripId)
                    and (cast(:partyId as integer) is null or vd.selling_party_id = :partyId)
@@ -65,10 +67,10 @@ public class ReportDataService {
                                where dpr.party_id = vd.id and dpr.party_type = 'VENDOR_DELIVERY'
                                  and dpr.isactive is true and dpr.isdeleted is false)
                  order by report_date, vd.id
-                """, from, to, tripId, partyId, null, null);
+                """, tenantId, from, to, tripId, partyId, null, null);
     }
 
-    private List<Map<String, Object>> purchases(LocalDate from, LocalDate to, Integer tripId, Integer partyId) {
+    private List<Map<String, Object>> purchases(long tenantId, LocalDate from, LocalDate to, Integer tripId, Integer partyId) {
         return query("""
                 select coalesce(sp.created_ate::date, o.createdate::date) as report_date,
                        sp.id as pickup_id, bp.name as party_name, o.trip_id,
@@ -77,15 +79,16 @@ public class ReportDataService {
                   from demo.supplier_pickup sp
                   join demo.buying_party bp on bp.id = sp.buying_party_id
                   join demo."order" o on o.id = sp.actual_order_id and o.isactive is true and o.isdeleted is false
-                 where sp.isactive is true and sp.isdeleted is false
+                 where sp.tenant_id = :tenantId
+                   and sp.isactive is true and sp.isdeleted is false
                    and coalesce(sp.created_ate::date, o.createdate::date) between :fromDate and :toDate
                    and (cast(:tripId as integer) is null or o.trip_id = :tripId)
                    and (cast(:partyId as integer) is null or sp.buying_party_id = :partyId)
                  order by report_date, sp.id
-                """, from, to, tripId, partyId, null, null);
+                """, tenantId, from, to, tripId, partyId, null, null);
     }
 
-    private List<Map<String, Object>> payments(LocalDate from, LocalDate to, Integer tripId, Integer partyId,
+    private List<Map<String, Object>> payments(long tenantId, LocalDate from, LocalDate to, Integer tripId, Integer partyId,
                                                String paymentType, String status) {
         return query("""
                 select p.payment_date as report_date, p.id as payment_id, p.payment_type,
@@ -94,17 +97,18 @@ public class ReportDataService {
                   from demo.payment p
                   left join demo.buying_party bp on bp.id = p.buying_party_id
                   left join demo.selling_party sp on sp.id = p.selling_party_id
-                 where p.isactive is true and p.isdeleted is false
+                 where p.tenant_id = :tenantId
+                   and p.isactive is true and p.isdeleted is false
                    and p.payment_date between :fromDate and :toDate
                    and (cast(:tripId as integer) is null or p.trip_id = :tripId)
                    and (cast(:partyId as integer) is null or p.buying_party_id = :partyId or p.selling_party_id = :partyId)
                    and (cast(:paymentType as varchar) is null or p.payment_type = :paymentType)
                    and (cast(:status as varchar) is null or p.status = :status)
                  order by p.payment_date, p.id
-                """, from, to, tripId, partyId, paymentType, status);
+                """, tenantId, from, to, tripId, partyId, paymentType, status);
     }
 
-    private List<Map<String, Object>> outstanding(LocalDate asOf, Integer partyId) {
+    private List<Map<String, Object>> outstanding(long tenantId, LocalDate asOf, Integer partyId) {
         return query("""
                 select 'RECEIVABLE' as balance_type, s.id as settlement_id, s.trip_id,
                        bp.name as party_name, s.settlement_date as report_date,
@@ -120,7 +124,8 @@ public class ReportDataService {
                          and p.status = 'COMPLETED' and p.isactive is true and p.isdeleted is false
                          and p.payment_date <= :toDate
                   ) paid on true
-                 where s.status <> 'VOID' and s.settlement_date <= :toDate
+                 where s.tenant_id = :tenantId
+                   and s.status <> 'VOID' and s.settlement_date <= :toDate
                    and (cast(:partyId as integer) is null or s.buying_party_id = :partyId)
                 union all
                 select 'PAYABLE' as balance_type, s.id as settlement_id, s.trip_id,
@@ -137,13 +142,14 @@ public class ReportDataService {
                          and p.status = 'COMPLETED' and p.isactive is true and p.isdeleted is false
                          and p.payment_date <= :toDate
                   ) paid on true
-                 where s.status <> 'VOID' and s.settlement_date <= :toDate
+                 where s.tenant_id = :tenantId
+                   and s.status <> 'VOID' and s.settlement_date <= :toDate
                    and (cast(:partyId as integer) is null or s.selling_party_id = :partyId)
                  order by report_date, settlement_id
-                """, LocalDate.of(1900, 1, 1), asOf, null, partyId, null, null);
+                """, tenantId, LocalDate.of(1900, 1, 1), asOf, null, partyId, null, null);
     }
 
-    private List<Map<String, Object>> deliveries(LocalDate from, LocalDate to, Integer tripId, Integer partyId) {
+    private List<Map<String, Object>> deliveries(long tenantId, LocalDate from, LocalDate to, Integer tripId, Integer partyId) {
         return query("""
                 select d.createdate::date as report_date, d.id as delivery_id, d.status as delivery_status,
                        o.trip_id, sp.name as party_name, o.qty as quantity, o.weight,
@@ -157,17 +163,18 @@ public class ReportDataService {
                   join demo.party_order_relation por on por.party_id = vd.id
                        and por.party_type = 'VENDOR_DELIVERY' and por.is_active is true and por.is_deleted is false
                   join demo."order" o on o.id = por.order_id and o.isactive is true and o.isdeleted is false
-                 where d.isactive is true and d.isdeleted is false
+                 where d.tenant_id = :tenantId
+                   and d.isactive is true and d.isdeleted is false
                    and d.createdate::date between :fromDate and :toDate
                    and (cast(:tripId as integer) is null or o.trip_id = :tripId)
                    and (cast(:partyId as integer) is null or vd.selling_party_id = :partyId)
                  order by report_date, d.id
-                """, from, to, tripId, partyId, null, null);
+                """, tenantId, from, to, tripId, partyId, null, null);
     }
 
-    private List<Map<String, Object>> query(String sql, LocalDate from, LocalDate to, Integer tripId,
+    private List<Map<String, Object>> query(String sql, long tenantId, LocalDate from, LocalDate to, Integer tripId,
                                             Integer partyId, String paymentType, String status) {
-        return jdbc.sql(sql).param("fromDate", from).param("toDate", to)
+        return jdbc.sql(sql).param("tenantId", tenantId).param("fromDate", from).param("toDate", to)
                 .param("tripId", tripId).param("partyId", partyId)
                 .param("paymentType", paymentType).param("status", status)
                 .query((rs, row) -> {

@@ -94,10 +94,10 @@ class PartyOrderRelationRepositoryIntegrationTest {
         entityManager.clear();
 
         assertThat(orderRepository.sumActiveOrderWeightTimesRateByPartyIdAndPartyType(
-                25, "SUPPLIER_PICKUP"
+                1L, 25, "SUPPLIER_PICKUP"
         )).isEqualByComparingTo("50.00");
         assertThat(orderRepository.sumActiveOrderWeightTimesRateByPartyIdAndPartyType(
-                99, "SUPPLIER_PICKUP"
+                1L, 99, "SUPPLIER_PICKUP"
         )).isEqualByComparingTo("0");
     }
 

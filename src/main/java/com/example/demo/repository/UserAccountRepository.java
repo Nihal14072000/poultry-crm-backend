@@ -23,5 +23,7 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Intege
 
     boolean existsByRole(AppRole role);
 
+    boolean existsByRoleAndTenantId(AppRole role, Long tenantId);
+
     void deleteByEmployeeId(Integer employeeId);
 }

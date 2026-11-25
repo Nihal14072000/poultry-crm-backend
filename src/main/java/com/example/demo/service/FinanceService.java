@@ -8,6 +8,7 @@ import com.example.demo.repository.FinanceOrderSettlementRepository;
 import com.example.demo.repository.FinancePaymentAllocationRepository;
 import com.example.demo.repository.FinanceReceivablesRepository;
 import com.example.demo.repository.PaymentRepository;
+import com.example.demo.security.TenantContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,15 +32,22 @@ public class FinanceService {
     }
 
     public List<FinanceOrderSettlement> settlements() {
-        return settlements.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
+        long tenantId = TenantContext.requireTenantId();
+        return settlements.findAll(Sort.by(Sort.Direction.DESC, "createdAt")).stream()
+                .filter(s -> java.util.Objects.equals(s.getTenantId(), tenantId))
+                .toList();
     }
 
     public List<FinanceOrderSettlement> tripSettlements(Integer tripId) {
-        return settlements.findByTripIdAndStatusNotOrderByCreatedAtDesc(tripId, "VOID");
+        long tenantId = TenantContext.requireTenantId();
+        return settlements.findByTripIdAndStatusNotOrderByCreatedAtDesc(tripId, "VOID").stream()
+                .filter(s -> java.util.Objects.equals(s.getTenantId(), tenantId))
+                .toList();
     }
 
     @Transactional
     public FinanceOrderSettlement createSettlement(FinanceOrderSettlement settlement) {
+        settlement.setTenantId(TenantContext.requireTenantId());
         if (settlement.getSettlementDate() == null) settlement.setSettlementDate(LocalDate.now());
         if (settlement.getBrokerageAmount() == null) settlement.setBrokerageAmount(BigDecimal.ZERO);
         if (settlement.getCurrencyCode() == null) settlement.setCurrencyCode("INR");
@@ -49,8 +57,14 @@ public class FinanceService {
 
     @Transactional
     public FinancePaymentAllocation allocate(FinancePaymentAllocation allocation) {
-        Payment payment = payments.findById(allocation.getPaymentId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Payment not found"));
-        FinanceOrderSettlement settlement = settlements.findById(allocation.getSettlementId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Settlement not found"));
+        long tenantId = TenantContext.requireTenantId();
+        Payment payment = payments.findById(allocation.getPaymentId())
+                .filter(p -> java.util.Objects.equals(p.getTenantId(), tenantId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Payment not found"));
+        FinanceOrderSettlement settlement = settlements.findById(allocation.getSettlementId())
+                .filter(s -> java.util.Objects.equals(s.getTenantId(), tenantId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Settlement not found"));
+        allocation.setTenantId(tenantId);
         String type = payment.getPaymentType();
         if (!List.of("BUYER_RECEIPT", "SELLER_PAYOUT").contains(type))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Payment type is not allocatable");

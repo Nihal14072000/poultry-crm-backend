@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @Table(name = "trip", schema = "demo")
 @Data
 @NoArgsConstructor
-public class Trip implements AuditableRecord {
+public class Trip extends TenantEntity implements AuditableRecord {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "trip_id")

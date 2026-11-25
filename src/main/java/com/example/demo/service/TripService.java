@@ -93,6 +93,7 @@ public class TripService extends CrudService<Trip> {
     @Transactional
     public TripRetrieveResponse createTrip(TripRetrieveResponse request) {
         Trip trip = toTrip(request);
+        trip.setTenantId(com.example.demo.security.TenantContext.requireTenantId());
         AuditSupport.markCreated(trip);
         trip = tripRepository.save(trip);
         saveParties(trip.getTripId(), request, false);
@@ -102,7 +103,10 @@ public class TripService extends CrudService<Trip> {
 
     @Transactional
     public Optional<TripRetrieveResponse> updateTrip(Integer tripId, TripRetrieveResponse request) {
-        Trip existingTrip = tripRepository.findById(tripId).orElse(null);
+        long tenantId = com.example.demo.security.TenantContext.requireTenantId();
+        Trip existingTrip = tripRepository.findById(tripId)
+                .filter(t -> java.util.Objects.equals(t.getTenantId(), tenantId))
+                .orElse(null);
         if (existingTrip == null) {
             return Optional.empty();
         }
@@ -128,7 +132,8 @@ public class TripService extends CrudService<Trip> {
     @Override
     @Transactional
     public boolean delete(Integer id) {
-        if (!tripRepository.existsById(id)) {
+        long tenantId = com.example.demo.security.TenantContext.requireTenantId();
+        if (tripRepository.findById(id).filter(t -> java.util.Objects.equals(t.getTenantId(), tenantId)).isEmpty()) {
             return false;
         }
         partyOrderRelationService.deleteOrdersByTripId(id);

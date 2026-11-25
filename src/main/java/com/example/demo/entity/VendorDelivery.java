@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @Table(name = "vendor_delievery", schema = "demo")
 @Data
 @NoArgsConstructor
-public class VendorDelivery implements ActiveRecord, AuditableRecord {
+public class VendorDelivery extends TenantEntity implements ActiveRecord, AuditableRecord {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;

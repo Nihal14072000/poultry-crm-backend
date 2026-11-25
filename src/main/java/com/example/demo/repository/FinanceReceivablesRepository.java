@@ -1,6 +1,7 @@
 package com.example.demo.repository;
 
 import com.example.demo.dto.FinanceSummaryResponse;
+import com.example.demo.security.TenantContext;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import java.util.List;
@@ -12,18 +13,21 @@ public class FinanceReceivablesRepository {
     public FinanceReceivablesRepository(JdbcClient jdbc) { this.jdbc = jdbc; }
 
     public FinanceSummaryResponse summary(Integer buyingPartyId, Integer sellingPartyId) {
+        long tenantId = TenantContext.requireTenantId();
         return jdbc.sql("""
                 select
                     coalesce((select sum(p.amount)
                               from demo.payment p
-                              where p.payment_type = 'BUYER_RECEIPT'
+                              where p.tenant_id = :tenantId
+                                and p.payment_type = 'BUYER_RECEIPT'
                                 and p.status = 'COMPLETED'
                                 and p.isactive is true
                                 and p.isdeleted is not true
                                 and (cast(:sellingPartyId as integer) is null or p.selling_party_id = :sellingPartyId)), 0) as total_received,
                     coalesce((select sum(coalesce(o.weight, 0) * coalesce(o.rate, 0))
                               from demo."order" o
-                              where o.isactive is true
+                              where o.tenant_id = :tenantId
+                                and o.isactive is true
                                 and o.isdeleted is not true
                                 and exists (
                                     select 1
@@ -36,7 +40,8 @@ public class FinanceReceivablesRepository {
                                 )), 0) as total_receivable,
                     coalesce((select sum(p.amount)
                               from demo.payment p
-                              where p.payment_type = 'SELLER_PAYOUT'
+                              where p.tenant_id = :tenantId
+                                and p.payment_type = 'SELLER_PAYOUT'
                                 and p.status = 'COMPLETED'
                                 and p.isactive is true
                                 and p.isdeleted is not true
@@ -52,7 +57,8 @@ public class FinanceReceivablesRepository {
                                 on vd.id = por.party_id
                                and vd.isactive is true
                                and vd.isdeleted is false
-                              where o.isactive is true
+                              where o.tenant_id = :tenantId
+                                and o.isactive is true
                                 and o.isdeleted is not true
                                 and (cast(:sellingPartyId as integer) is null or vd.selling_party_id = :sellingPartyId)
                                 and exists (
@@ -68,6 +74,7 @@ public class FinanceReceivablesRepository {
                                       and dpr.isdeleted is false
                                 )), 0) as total_payable
                 """)
+                .param("tenantId", tenantId)
                 .param("buyingPartyId", buyingPartyId)
                 .param("sellingPartyId", sellingPartyId)
                 .query((rs, row) -> new FinanceSummaryResponse(
@@ -80,8 +87,9 @@ public class FinanceReceivablesRepository {
     }
 
     public List<Map<String, Object>> buyers(Integer tripId, Integer partyId) {
-        var query = jdbc.sql("select * from demo.finance_buyer_receivables_v where (cast(:tripId as integer) is null or trip_id = :tripId) and (cast(:partyId as integer) is null or buying_party_id = :partyId) order by trip_id, settlement_id")
-                .param("tripId", tripId).param("partyId", partyId);
+        long tenantId = TenantContext.requireTenantId();
+        var query = jdbc.sql("select * from demo.finance_buyer_receivables_v where tenant_id = :tenantId and (cast(:tripId as integer) is null or trip_id = :tripId) and (cast(:partyId as integer) is null or buying_party_id = :partyId) order by trip_id, settlement_id")
+                .param("tenantId", tenantId).param("tripId", tripId).param("partyId", partyId);
         return query.query((rs, row) -> {
             var metadata = rs.getMetaData(); Map<String, Object> result = new java.util.LinkedHashMap<>();
             for (int i = 1; i <= metadata.getColumnCount(); i++) result.put(metadata.getColumnLabel(i), rs.getObject(i));
@@ -89,8 +97,9 @@ public class FinanceReceivablesRepository {
         }).list();
     }
     public List<Map<String, Object>> sellers(Integer tripId, Integer partyId) {
-        var query = jdbc.sql("select * from demo.finance_seller_payables_v where (cast(:tripId as integer) is null or trip_id = :tripId) and (cast(:partyId as integer) is null or selling_party_id = :partyId) order by trip_id, settlement_id")
-                .param("tripId", tripId).param("partyId", partyId);
+        long tenantId = TenantContext.requireTenantId();
+        var query = jdbc.sql("select * from demo.finance_seller_payables_v where tenant_id = :tenantId and (cast(:tripId as integer) is null or trip_id = :tripId) and (cast(:partyId as integer) is null or selling_party_id = :partyId) order by trip_id, settlement_id")
+                .param("tenantId", tenantId).param("tripId", tripId).param("partyId", partyId);
         return query.query((rs, row) -> {
             var metadata = rs.getMetaData(); Map<String, Object> result = new java.util.LinkedHashMap<>();
             for (int i = 1; i <= metadata.getColumnCount(); i++) result.put(metadata.getColumnLabel(i), rs.getObject(i));
@@ -98,7 +107,9 @@ public class FinanceReceivablesRepository {
         }).list();
     }
     public List<Map<String, Object>> trips(Integer tripId) {
-        var query = jdbc.sql("select * from demo.finance_trip_payment_summary_v where (cast(:tripId as integer) is null or trip_id = :tripId) order by trip_id").param("tripId", tripId);
+        long tenantId = TenantContext.requireTenantId();
+        var query = jdbc.sql("select * from demo.finance_trip_payment_summary_v where tenant_id = :tenantId and (cast(:tripId as integer) is null or trip_id = :tripId) order by trip_id")
+                .param("tenantId", tenantId).param("tripId", tripId);
         return query.query((rs, row) -> {
             var metadata = rs.getMetaData(); Map<String, Object> result = new java.util.LinkedHashMap<>();
             for (int i = 1; i <= metadata.getColumnCount(); i++) result.put(metadata.getColumnLabel(i), rs.getObject(i));
