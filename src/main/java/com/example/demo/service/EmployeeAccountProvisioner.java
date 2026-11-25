@@ -4,6 +4,7 @@ import com.example.demo.entity.AppRole;
 import com.example.demo.entity.Employee;
 import com.example.demo.entity.UserAccount;
 import com.example.demo.repository.UserAccountRepository;
+import com.example.demo.security.TenantContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -62,6 +63,7 @@ public class EmployeeAccountProvisioner {
     @Async
     public void createAccount(Employee employee, String username) {
         UserAccount account = new UserAccount();
+        account.setTenantId(employee.getTenantId() != null ? employee.getTenantId() : TenantContext.currentTenantIdOrDefault());
         account.setUsername(username);
         account.setPasswordHash(passwordEncoder.encode(username));
         account.setRole(AppRole.EMPLOYEE);

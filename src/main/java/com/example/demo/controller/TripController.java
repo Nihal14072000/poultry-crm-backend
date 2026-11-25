@@ -105,8 +105,9 @@ public class TripController {
     @PutMapping("/{id}/update")
     public ResponseEntity<TripRetrieveResponse> update(
             @PathVariable Integer id,
-            @RequestBody JsonNode request
+            @RequestBody String rawJson
     ) throws IOException {
+        JsonNode request = objectMapper.readTree(rawJson);
         TripRetrieveResponse current = service.retrieve(id).orElse(null);
         if (current == null) {
             return ResponseEntity.notFound().build();

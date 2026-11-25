@@ -70,8 +70,10 @@ public class DeliveryService extends CrudService<Delivery> {
 
     @Transactional(readOnly = true)
     public List<DeliveryRetrieveResponse> retrieveByTripId(Integer tripId) {
+        long tenantId = com.example.demo.security.TenantContext.requireTenantId();
         List<Delivery> deliveries = CreatedRecord.newestFirst(deliveryRepository.findByTripId(tripId).stream()
                 .filter(ActiveRecord::isActiveRecord)
+                .filter(d -> java.util.Objects.equals(d.getTenantId(), tenantId))
                 .toList());
         log.info("Retrieved {} active deliveries for tripId={}", deliveries.size(), tripId);
         return deliveries.stream().map(this::toResponse).toList();

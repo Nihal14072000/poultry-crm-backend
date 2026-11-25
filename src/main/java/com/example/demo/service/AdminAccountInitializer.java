@@ -3,6 +3,7 @@ package com.example.demo.service;
 import com.example.demo.entity.AppRole;
 import com.example.demo.entity.UserAccount;
 import com.example.demo.repository.UserAccountRepository;
+import com.example.demo.security.TenantContext;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -30,7 +31,7 @@ public class AdminAccountInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        if (repository.existsByRole(AppRole.ADMIN)) {
+        if (repository.existsByRoleAndTenantId(AppRole.ADMIN, TenantContext.DEFAULT_TENANT_ID)) {
             return;
         }
         if (repository.existsByUsername(username)) {
@@ -38,6 +39,7 @@ public class AdminAccountInitializer implements ApplicationRunner {
         }
 
         UserAccount admin = new UserAccount();
+        admin.setTenantId(TenantContext.DEFAULT_TENANT_ID);
         admin.setUsername(username);
         admin.setPasswordHash(passwordEncoder.encode(password));
         admin.setRole(AppRole.ADMIN);

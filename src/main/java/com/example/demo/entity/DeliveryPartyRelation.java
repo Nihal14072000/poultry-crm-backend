@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Table(name = "delievery_party_relation", schema = "demo")
 @Data
 @NoArgsConstructor
-public class DeliveryPartyRelation implements ActiveRecord, AuditableRecord {
+public class DeliveryPartyRelation extends TenantEntity implements ActiveRecord, AuditableRecord {
     @Id
     private Integer id;
 

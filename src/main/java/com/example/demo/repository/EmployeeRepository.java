@@ -21,9 +21,11 @@ public interface EmployeeRepository extends JpaRepository<Employee, Integer> {
 
     @Query("select distinct e from Employee e, Trip t where t.vehicleId = :vehicleId "
             + "and t.driverId = e.id and e.type = :type and e.isActive = true "
-            + "and e.isDeleted = false order by e.createDate desc")
+            + "and e.isDeleted = false and e.tenantId = :tenantId and t.tenantId = :tenantId "
+            + "order by e.createDate desc")
     List<Employee> findDistinctAssignedToVehicle(
             @Param("vehicleId") Integer vehicleId,
-            @Param("type") String type
+            @Param("type") String type,
+            @Param("tenantId") Long tenantId
     );
 }

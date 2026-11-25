@@ -27,7 +27,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
     @Query("""
             select sum(p.amount)
             from Payment p
-            where ((:partyType = 'B' and p.buyingPartyId = :partyId)
+            where p.tenantId = :tenantId
+              and ((:partyType = 'B' and p.buyingPartyId = :partyId)
                 or (:partyType = 'S' and p.sellingPartyId = :partyId))
               and (:startDate is null or p.paymentDate >= :startDate)
               and (:endDate is null or p.paymentDate <= :endDate)
@@ -36,6 +37,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
               and p.isDeleted = false
             """)
     BigDecimal sumCompletedPaymentsByParty(
+            @Param("tenantId") Long tenantId,
             @Param("partyId") Integer partyId,
             @Param("partyType") String partyType,
             @Param("startDate") LocalDate startDate,

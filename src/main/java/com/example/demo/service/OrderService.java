@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import com.example.demo.entity.Order;
 import com.example.demo.repository.OrderRepository;
+import com.example.demo.security.TenantContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,18 +26,18 @@ public class OrderService extends CrudService<Order> {
     }
 
     public List<Order> findAll(LocalDate startDate, LocalDate endDate) {
-        return repository.findActiveInDateRange(startOfDay(startDate), startOfNextDay(endDate));
+        return repository.findActiveInDateRange(TenantContext.requireTenantId(), startOfDay(startDate), startOfNextDay(endDate));
     }
 
     public List<Order> findActiveByPartyIdAndPartyType(Integer partyId, String partyType) {
-        return repository.findActiveByPartyIdAndPartyType(partyId, partyType);
+        return repository.findActiveByPartyIdAndPartyType(TenantContext.requireTenantId(), partyId, partyType);
     }
 
     public BigDecimal sumActiveOrderWeightTimesRateByPartyIdAndPartyType(
             Integer partyId,
             String partyType
     ) {
-        return repository.sumActiveOrderWeightTimesRateByPartyIdAndPartyType(partyId, partyType);
+        return repository.sumActiveOrderWeightTimesRateByPartyIdAndPartyType(TenantContext.requireTenantId(), partyId, partyType);
     }
 
     public List<Order> findActiveByPartyIdAndPartyType(
@@ -46,7 +47,7 @@ public class OrderService extends CrudService<Order> {
             LocalDate endDate
     ) {
         return repository.findActiveByPartyIdAndPartyTypeInDateRange(
-                partyId, partyType, startOfDay(startDate), startOfNextDay(endDate)
+                TenantContext.requireTenantId(), partyId, partyType, startOfDay(startDate), startOfNextDay(endDate)
         );
     }
 
@@ -63,6 +64,6 @@ public class OrderService extends CrudService<Order> {
             Integer partyId,
             String partyType
     ) {
-        return repository.findActiveByTripIdAndPartyIdAndPartyType(tripId, partyId, partyType);
+        return repository.findActiveByTripIdAndPartyIdAndPartyType(TenantContext.requireTenantId(), tripId, partyId, partyType);
     }
 }

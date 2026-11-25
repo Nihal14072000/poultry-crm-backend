@@ -4,9 +4,11 @@ import com.example.demo.dto.ChangePasswordRequest;
 import com.example.demo.dto.CreateEmployeeAccountRequest;
 import com.example.demo.dto.EmployeeAccountResponse;
 import com.example.demo.entity.AppRole;
+import com.example.demo.entity.Employee;
 import com.example.demo.entity.UserAccount;
 import com.example.demo.repository.EmployeeRepository;
 import com.example.demo.repository.UserAccountRepository;
+import com.example.demo.security.TenantContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -14,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 @Service
 public class EmployeeAccountService {
@@ -43,14 +46,16 @@ public class EmployeeAccountService {
         if (userAccountRepository.existsByNormalizedUsername(username)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Username is already in use");
         }
-        if (!employeeRepository.existsById(request.employeeId())) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee does not exist");
-        }
+        long tenantId = TenantContext.requireTenantId();
+        Employee employee = employeeRepository.findById(request.employeeId())
+                .filter(e -> Objects.equals(e.getTenantId(), tenantId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee does not exist"));
         if (userAccountRepository.existsByEmployeeId(request.employeeId())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Employee already has an account");
         }
 
         UserAccount account = new UserAccount();
+        account.setTenantId(employee.getTenantId());
         account.setUsername(username);
         account.setPasswordHash(passwordEncoder.encode(request.password()));
         account.setRole(AppRole.EMPLOYEE);

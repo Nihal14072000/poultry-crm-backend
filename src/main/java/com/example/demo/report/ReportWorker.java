@@ -1,5 +1,6 @@
 package com.example.demo.report;
 
+import com.example.demo.security.TenantContext;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -29,6 +30,7 @@ public class ReportWorker {
     }
 
     private void process(ReportJob job) {
+        TenantContext.setTenantId(job.tenantId());
         try {
             ReportData data = dataService.load(job);
             Path userDirectory = storageDirectory.resolve(String.valueOf(job.requestedBy())).normalize();
@@ -43,6 +45,8 @@ public class ReportWorker {
         } catch (Exception ex) {
             String message = ex.getMessage() == null ? "Report generation failed" : ex.getMessage();
             jobs.markFailed(job.id(), message.length() > 1000 ? message.substring(0, 1000) : message);
+        } finally {
+            TenantContext.clear();
         }
     }
 }

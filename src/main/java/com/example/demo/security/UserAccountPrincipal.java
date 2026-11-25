@@ -12,6 +12,7 @@ import java.util.Locale;
 
 public final class UserAccountPrincipal implements UserDetails {
     private final Integer id;
+    private final Long tenantId;
     private final String username;
     private final String password;
     private final boolean enabled;
@@ -23,6 +24,7 @@ public final class UserAccountPrincipal implements UserDetails {
 
     public UserAccountPrincipal(UserAccount account, String employeeType) {
         this.id = account.getId();
+        this.tenantId = account.getTenantId() != null ? account.getTenantId() : TenantContext.DEFAULT_TENANT_ID;
         this.username = account.getUsername();
         this.password = account.getPasswordHash();
         this.enabled = account.isEnabled();
@@ -36,6 +38,10 @@ public final class UserAccountPrincipal implements UserDetails {
 
     public Integer getId() {
         return id;
+    }
+
+    public Long getTenantId() {
+        return tenantId;
     }
 
     @Override

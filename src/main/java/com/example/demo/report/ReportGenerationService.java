@@ -121,8 +121,10 @@ public class ReportGenerationService {
     }
 
     private LocalDate findTripDate(Integer tripId) {
-        return jdbc.sql("select \"date\" from demo.trip where trip_id = :tripId")
+        long tenantId = com.example.demo.security.TenantContext.requireTenantId();
+        return jdbc.sql("select \"date\" from demo.trip where trip_id = :tripId and tenant_id = :tenantId")
                 .param("tripId", tripId)
+                .param("tenantId", tenantId)
                 .query(LocalDate.class)
                 .optional()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trip not found"));

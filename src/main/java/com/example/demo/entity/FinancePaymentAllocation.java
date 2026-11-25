@@ -12,7 +12,7 @@ import java.time.OffsetDateTime;
 @Table(name = "finance_payment_allocation", schema = "demo")
 @Data
 @NoArgsConstructor
-public class FinancePaymentAllocation {
+public class FinancePaymentAllocation extends TenantEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
