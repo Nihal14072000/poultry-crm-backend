@@ -3,12 +3,14 @@ package com.example.demo.service;
 import com.example.demo.entity.TripPartyRelation;
 import com.example.demo.entity.ActiveRecord;
 import com.example.demo.repository.TripPartyRelationRepository;
+import com.example.demo.security.TenantContext;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class TripPartyRelationService {
@@ -30,7 +32,10 @@ public class TripPartyRelationService {
         if (buyingPartyIds == null && sellingPartyIds == null) {
             return;
         }
-        List<TripPartyRelation> existingRelations = repository.findByTripId(tripId);
+        long tenantId = TenantContext.requireTenantId();
+        List<TripPartyRelation> existingRelations = repository.findByTripId(tripId).stream()
+                .filter(relation -> Objects.equals(relation.getTenantId(), tenantId))
+                .toList();
         existingRelations.stream()
                 .filter(this::isActive)
                 .filter(relation -> BUYING_PARTY_TYPE.equals(relation.getPartyType())
@@ -40,8 +45,8 @@ public class TripPartyRelationService {
         repository.saveAll(existingRelations);
 
         List<TripPartyRelation> newRelations = new ArrayList<>();
-        addRelations(newRelations, tripId, buyingPartyIds, BUYING_PARTY_TYPE);
-        addRelations(newRelations, tripId, sellingPartyIds, SELLING_PARTY_TYPE);
+        addRelations(newRelations, tripId, buyingPartyIds, BUYING_PARTY_TYPE, tenantId);
+        addRelations(newRelations, tripId, sellingPartyIds, SELLING_PARTY_TYPE, tenantId);
         if (!newRelations.isEmpty()) {
             repository.saveAll(newRelations);
         }
@@ -49,18 +54,21 @@ public class TripPartyRelationService {
 
     @Transactional(readOnly = true)
     public List<TripPartyRelation> findActiveByTripId(Integer tripId) {
+        long tenantId = TenantContext.requireTenantId();
         return repository.findByTripId(tripId, Sort.by(Sort.Order.desc("createDate").nullsLast())).stream()
                 .filter(ActiveRecord::isActiveRecord)
+                .filter(relation -> Objects.equals(relation.getTenantId(), tenantId))
                 .toList();
     }
 
     private void addRelations(List<TripPartyRelation> relations, Integer tripId,
-                              List<Integer> partyIds, String partyType) {
+                              List<Integer> partyIds, String partyType, long tenantId) {
         if (partyIds == null) {
             return;
         }
         for (Integer partyId : partyIds) {
             TripPartyRelation relation = new TripPartyRelation();
+            relation.setTenantId(tenantId);
             relation.setTripId(tripId);
             relation.setPartyId(partyId);
             relation.setPartyType(partyType);

@@ -75,9 +75,9 @@ public class FinanceService {
         if (!partyMatches) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Payment party does not match settlement");
         if (payment.getStatus() == null || !"COMPLETED".equals(payment.getStatus()))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only completed payments can be allocated");
-        BigDecimal paymentRemaining = payment.getAmount().subtract(allocations.sumAllocatedForPayment(payment.getId()));
+        BigDecimal paymentRemaining = payment.getAmount().subtract(allocations.sumAllocatedForPayment(tenantId, payment.getId()));
         BigDecimal due = "BUYER_RECEIPT".equals(type) ? settlement.getBuyerDueAmount() : settlement.getSellerDueAmount();
-        BigDecimal settlementRemaining = due.subtract(allocations.sumCompletedForSettlement(settlement.getId(), type));
+        BigDecimal settlementRemaining = due.subtract(allocations.sumCompletedForSettlement(tenantId, settlement.getId(), type));
         if (allocation.getAllocatedAmount() == null || allocation.getAllocatedAmount().signum() <= 0
                 || allocation.getAllocatedAmount().compareTo(paymentRemaining) > 0
                 || allocation.getAllocatedAmount().compareTo(settlementRemaining) > 0)

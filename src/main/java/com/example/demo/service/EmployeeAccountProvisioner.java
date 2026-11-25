@@ -3,6 +3,7 @@ package com.example.demo.service;
 import com.example.demo.entity.AppRole;
 import com.example.demo.entity.Employee;
 import com.example.demo.entity.UserAccount;
+import com.example.demo.repository.RoleRepository;
 import com.example.demo.repository.UserAccountRepository;
 import com.example.demo.security.TenantContext;
 import org.springframework.http.HttpStatus;
@@ -16,13 +17,16 @@ import java.util.Locale;
 @Service
 public class EmployeeAccountProvisioner {
     private final UserAccountRepository userAccountRepository;
+    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
     public EmployeeAccountProvisioner(
             UserAccountRepository userAccountRepository,
+            RoleRepository roleRepository,
             PasswordEncoder passwordEncoder
     ) {
         this.userAccountRepository = userAccountRepository;
+        this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -62,11 +66,16 @@ public class EmployeeAccountProvisioner {
 
     @Async
     public void createAccount(Employee employee, String username) {
+        long tenantId = employee.getTenantId() != null ? employee.getTenantId() : TenantContext.currentTenantIdOrDefault();
         UserAccount account = new UserAccount();
-        account.setTenantId(employee.getTenantId() != null ? employee.getTenantId() : TenantContext.currentTenantIdOrDefault());
+        account.setTenantId(tenantId);
         account.setUsername(username);
         account.setPasswordHash(passwordEncoder.encode(username));
         account.setRole(AppRole.EMPLOYEE);
+        if (employee.getType() != null && !employee.getType().isBlank()) {
+            roleRepository.findByTenantIdAndNameIgnoreCase(tenantId, employee.getType().trim())
+                    .ifPresent(role -> account.setRoleId(role.getId()));
+        }
         account.setEmployeeId(employee.getId());
         account.setEnabled(true);
         userAccountRepository.save(account);

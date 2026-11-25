@@ -2,11 +2,13 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.TenantRequest;
 import com.example.demo.entity.AppRole;
+import com.example.demo.entity.Role;
 import com.example.demo.entity.Tenant;
 import com.example.demo.entity.UserAccount;
 import com.example.demo.repository.TenantRepository;
 import com.example.demo.repository.UserAccountRepository;
 import com.example.demo.service.EmployeeAccountProvisioner;
+import com.example.demo.service.RoleService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -31,11 +33,18 @@ public class TenantController {
     private final TenantRepository tenants;
     private final UserAccountRepository users;
     private final PasswordEncoder passwordEncoder;
+    private final RoleService roleService;
 
-    public TenantController(TenantRepository tenants, UserAccountRepository users, PasswordEncoder passwordEncoder) {
+    public TenantController(
+            TenantRepository tenants,
+            UserAccountRepository users,
+            PasswordEncoder passwordEncoder,
+            RoleService roleService
+    ) {
         this.tenants = tenants;
         this.users = users;
         this.passwordEncoder = passwordEncoder;
+        this.roleService = roleService;
     }
 
     @GetMapping
@@ -62,26 +71,41 @@ public class TenantController {
         tenant.setName(name);
         tenant.setActive(request.isActive() == null || request.isActive());
         Tenant saved = tenants.save(tenant);
+        Role adminRole = roleService.seedDefaultsForTenant(saved.getId());
 
+        String username;
+        String rawPassword;
         if (request.adminUsername() != null && !request.adminUsername().isBlank()) {
             if (request.adminPassword() == null || request.adminPassword().isBlank()) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "adminPassword is required when adminUsername is provided");
             }
-            String username = EmployeeAccountProvisioner.normalizeUsername(request.adminUsername());
+            username = EmployeeAccountProvisioner.normalizeUsername(request.adminUsername());
             if (request.adminUsername().contains(":") || username.isEmpty()) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid adminUsername");
             }
-            if (users.existsByNormalizedUsername(username)) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Username is already in use");
-            }
-            UserAccount admin = new UserAccount();
-            admin.setTenantId(saved.getId());
-            admin.setUsername(username);
-            admin.setPasswordHash(passwordEncoder.encode(request.adminPassword()));
-            admin.setRole(AppRole.ADMIN);
-            admin.setEnabled(true);
-            users.save(admin);
+            rawPassword = request.adminPassword();
+        } else {
+            String base = EmployeeAccountProvisioner.normalizeUsername(name).replace(":", "");
+            String suffix = "_" + saved.getId();
+            int maxBase = Math.max(1, 100 - suffix.length());
+            username = (base.length() > maxBase ? base.substring(0, maxBase) : base) + suffix;
+            rawPassword = (request.adminPassword() != null && !request.adminPassword().isBlank())
+                    ? request.adminPassword()
+                    : username;
         }
+
+        if (users.existsByNormalizedUsername(username)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Username is already in use");
+        }
+        UserAccount admin = new UserAccount();
+        admin.setTenantId(saved.getId());
+        admin.setUsername(username);
+        admin.setPasswordHash(passwordEncoder.encode(rawPassword));
+        admin.setRole(AppRole.ADMIN);
+        admin.setRoleId(adminRole.getId());
+        admin.setEnabled(true);
+        users.save(admin);
+        saved.setAdminUsername(username);
         return saved;
     }
 

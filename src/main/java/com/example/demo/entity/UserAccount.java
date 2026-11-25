@@ -32,6 +32,9 @@ public class UserAccount extends TenantEntity {
     @Column(nullable = false, length = 20)
     private AppRole role;
 
+    @Column(name = "role_id")
+    private Long roleId;
+
     @Column(name = "employee_id", unique = true)
     private Integer employeeId;
 
