@@ -1,9 +1,12 @@
 package com.example.demo.service;
 
 import com.example.demo.entity.Employee;
+import com.example.demo.entity.Tenant;
 import com.example.demo.entity.UserAccount;
 import com.example.demo.repository.EmployeeRepository;
+import com.example.demo.repository.TenantRepository;
 import com.example.demo.repository.UserAccountRepository;
+import com.example.demo.security.TenantContext;
 import com.example.demo.security.UserAccountPrincipal;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -21,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 public class EmployeeUserDetailsService implements UserDetailsService {
     private final UserAccountRepository repository;
     private final EmployeeRepository employeeRepository;
+    private final TenantRepository tenantRepository;
     private final PasswordEncoder passwordEncoder;
     private final String superuserUsername;
     private volatile String superuserPasswordHash;
@@ -28,12 +32,14 @@ public class EmployeeUserDetailsService implements UserDetailsService {
     public EmployeeUserDetailsService(
             UserAccountRepository repository,
             EmployeeRepository employeeRepository,
+            TenantRepository tenantRepository,
             PasswordEncoder passwordEncoder,
             @Value("${app.security.superuser.username:superuser}") String superuserUsername,
             @Value("${app.security.superuser.password:superuser}") String superuserPassword
     ) {
         this.repository = repository;
         this.employeeRepository = employeeRepository;
+        this.tenantRepository = tenantRepository;
         this.passwordEncoder = passwordEncoder;
         this.superuserUsername = EmployeeAccountProvisioner.normalizeUsername(superuserUsername);
         this.superuserPasswordHash = passwordEncoder.encode(superuserPassword);
@@ -73,9 +79,14 @@ public class EmployeeUserDetailsService implements UserDetailsService {
         UserAccount account = repository.findByNormalizedUsername(normalized)
                 .orElseThrow(() -> new UsernameNotFoundException("Account not found"));
 
+        long tenantId = account.getTenantId() != null ? account.getTenantId() : TenantContext.DEFAULT_TENANT_ID;
+        boolean tenantActive = tenantRepository.findById(tenantId)
+                .map(Tenant::isActive)
+                .orElse(true);
+
         String employeeType = account.getEmployeeId() != null
                 ? employeeRepository.findById(account.getEmployeeId()).map(Employee::getType).orElse(null)
                 : null;
-        return new UserAccountPrincipal(account, employeeType);
+        return new UserAccountPrincipal(account, employeeType, tenantActive);
     }
 }

@@ -63,25 +63,38 @@ public class TenantController {
         tenant.setActive(request.isActive() == null || request.isActive());
         Tenant saved = tenants.save(tenant);
 
+        String username;
+        String rawPassword;
         if (request.adminUsername() != null && !request.adminUsername().isBlank()) {
             if (request.adminPassword() == null || request.adminPassword().isBlank()) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "adminPassword is required when adminUsername is provided");
             }
-            String username = EmployeeAccountProvisioner.normalizeUsername(request.adminUsername());
+            username = EmployeeAccountProvisioner.normalizeUsername(request.adminUsername());
             if (request.adminUsername().contains(":") || username.isEmpty()) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid adminUsername");
             }
-            if (users.existsByNormalizedUsername(username)) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Username is already in use");
-            }
-            UserAccount admin = new UserAccount();
-            admin.setTenantId(saved.getId());
-            admin.setUsername(username);
-            admin.setPasswordHash(passwordEncoder.encode(request.adminPassword()));
-            admin.setRole(AppRole.ADMIN);
-            admin.setEnabled(true);
-            users.save(admin);
+            rawPassword = request.adminPassword();
+        } else {
+            String base = EmployeeAccountProvisioner.normalizeUsername(name).replace(":", "");
+            String suffix = "_" + saved.getId();
+            int maxBase = Math.max(1, 100 - suffix.length());
+            username = (base.length() > maxBase ? base.substring(0, maxBase) : base) + suffix;
+            rawPassword = (request.adminPassword() != null && !request.adminPassword().isBlank())
+                    ? request.adminPassword()
+                    : username;
         }
+
+        if (users.existsByNormalizedUsername(username)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Username is already in use");
+        }
+        UserAccount admin = new UserAccount();
+        admin.setTenantId(saved.getId());
+        admin.setUsername(username);
+        admin.setPasswordHash(passwordEncoder.encode(rawPassword));
+        admin.setRole(AppRole.ADMIN);
+        admin.setEnabled(true);
+        users.save(admin);
+        saved.setAdminUsername(username);
         return saved;
     }
 

@@ -44,6 +44,7 @@ class EmployeeLoginNormalizationTest {
         userDetailsService = new EmployeeUserDetailsService(
                 userAccountRepository,
                 employeeRepository,
+                org.mockito.Mockito.mock(com.example.demo.repository.TenantRepository.class),
                 passwordEncoder,
                 "superuser",
                 "superuser"
