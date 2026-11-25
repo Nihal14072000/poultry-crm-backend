@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.PagedResponse;
 import com.example.demo.entity.BuyingParty;
 import com.example.demo.service.BuyingPartyService;
 import org.springframework.http.HttpStatus;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -27,6 +29,14 @@ public class BuyingPartyController {
     @GetMapping
     public List<BuyingParty> findAll() {
         return service.findAll();
+    }
+
+    @GetMapping("/paged")
+    public PagedResponse<BuyingParty> findPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return PagedResponse.from(service.findPage(page, size));
     }
 
     @GetMapping("/{id}")
