@@ -10,7 +10,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.Locale;
 
 @Service
 public class EmployeeAccountProvisioner {
@@ -25,19 +25,32 @@ public class EmployeeAccountProvisioner {
         this.passwordEncoder = passwordEncoder;
     }
 
+    public static String normalizeUsername(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replaceAll("\\s+", "").toLowerCase(Locale.ROOT);
+    }
+
     public String validateNameForAccount(String employeeName) {
         if (employeeName == null || employeeName.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Employee name is required");
         }
-
-        String username = employeeName.trim();
-        if (username.length() > 100 || username.contains(":")) {
+        if (employeeName.contains(":")) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Employee name must be at most 100 characters and must not contain ':'"
+                    "Employee name must not contain ':'"
             );
         }
-        if (userAccountRepository.existsByUsername(username)) {
+
+        String username = normalizeUsername(employeeName);
+        if (username.isEmpty() || username.length() > 100) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Employee name must be at most 100 characters without spaces"
+            );
+        }
+        if (userAccountRepository.existsByNormalizedUsername(username)) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "An account already uses this employee name; employee names used as usernames must be unique"

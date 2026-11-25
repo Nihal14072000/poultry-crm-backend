@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.ChangePasswordRequest;
 import com.example.demo.dto.CreateEmployeeAccountRequest;
 import com.example.demo.dto.EmployeeAccountResponse;
 import com.example.demo.entity.AppRole;
@@ -11,6 +12,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.nio.charset.StandardCharsets;
 
 @Service
 public class EmployeeAccountService {
@@ -30,8 +33,14 @@ public class EmployeeAccountService {
 
     @Transactional
     public EmployeeAccountResponse create(CreateEmployeeAccountRequest request) {
-        String username = request.username().trim();
-        if (userAccountRepository.existsByUsername(username)) {
+        if (request.username().contains(":")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username must not contain ':'");
+        }
+        String username = EmployeeAccountProvisioner.normalizeUsername(request.username());
+        if (username.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username must not be blank");
+        }
+        if (userAccountRepository.existsByNormalizedUsername(username)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Username is already in use");
         }
         if (!employeeRepository.existsById(request.employeeId())) {
@@ -53,5 +62,19 @@ public class EmployeeAccountService {
                 saved.getEmployeeId(),
                 saved.getRole().name()
         );
+    }
+
+    @Transactional
+    public void changePassword(String username, ChangePasswordRequest request) {
+        if (request.newPassword().getBytes(StandardCharsets.UTF_8).length > 72) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password must be at most 72 UTF-8 bytes");
+        }
+        UserAccount account = userAccountRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account not found"));
+        if (!passwordEncoder.matches(request.currentPassword(), account.getPasswordHash())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Current password is incorrect");
+        }
+        account.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userAccountRepository.save(account);
     }
 }
