@@ -317,6 +317,48 @@ class PartyOrderRelationRepositoryIntegrationTest {
                 .containsExactly(activeOrder.getId());
     }
 
+    @Test
+    void actualVendorDeliveryOrdersExcludeCompletedAndDeletedTrips() {
+        Integer activeTripId = persistTrip("Delivery in progress");
+        Integer completedTripId = persistTrip("Completed");
+        Integer deletedTripId = persistTrip("Deleted");
+
+        VendorDelivery activeDeliveryRecord = persistVendorDelivery(35, activeTripId);
+        VendorDelivery completedDeliveryRecord = persistVendorDelivery(35, completedTripId);
+        VendorDelivery deletedDeliveryRecord = persistVendorDelivery(35, deletedTripId);
+
+        Order activeOrder = persistOrder(null);
+        Order completedOrder = persistOrder(null);
+        Order deletedOrder = persistOrder(null);
+        persistRelation(activeDeliveryRecord.getId(), "VENDOR_DELIVERY", activeOrder.getId());
+        persistRelation(completedDeliveryRecord.getId(), "VENDOR_DELIVERY", completedOrder.getId());
+        persistRelation(deletedDeliveryRecord.getId(), "VENDOR_DELIVERY", deletedOrder.getId());
+
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(orderRepository.findActualVendorDeliveryOrders(1L, 35))
+                .extracting(com.example.demo.dto.PartyActualOrderDto::id)
+                .containsExactly(activeOrder.getId());
+    }
+
+    private VendorDelivery persistVendorDelivery(Integer sellingPartyId, Integer tripId) {
+        VendorDelivery vendorDelivery = new VendorDelivery();
+        vendorDelivery.setSellingPartyId(sellingPartyId);
+        vendorDelivery.setCreateDate(LocalDateTime.parse("2026-11-24T10:00:00"));
+        vendorDelivery.setIsActive(true);
+        vendorDelivery.setIsDeleted(false);
+        entityManager.persist(vendorDelivery);
+
+        Delivery delivery = new Delivery();
+        delivery.setTripId(tripId);
+        delivery.setVendorDelieveryId(vendorDelivery.getId());
+        delivery.setIsActive(true);
+        delivery.setIsDeleted(false);
+        entityManager.persist(delivery);
+        return vendorDelivery;
+    }
+
     private Integer persistTrip(String status) {
         Trip trip = new Trip();
         trip.setStatus(status);
