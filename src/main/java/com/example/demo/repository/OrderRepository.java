@@ -126,12 +126,16 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
 
     @Query("""
             select distinct new com.example.demo.dto.PartyActualOrderDto(
-                o.id, delivery.tripId, o.orderTypeId, o.qty, o.weight, o.rate, o.total, pickup.createdDate
+                o.id, o.tripId, o.orderTypeId, o.qty, o.weight, o.rate, o.total, pickup.createdDate
             )
             from Order o
             join PartyOrderRelation relation on relation.orderId = o.id
+            join Trip trip on trip.tripId = o.tripId
+                and trip.tenantId = :tenantId
+                and coalesce(lower(trip.status), '') <> 'deleted'
             join SupplierPickup pickup on pickup.id = relation.partyId
             join Delivery delivery on delivery.supplierPickupId = pickup.id
+                and delivery.tripId = o.tripId
                 and delivery.tenantId = :tenantId
                 and delivery.isActive = true
                 and delivery.isDeleted = false
@@ -159,6 +163,9 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             )
             from Order o
             join PartyOrderRelation relation on relation.orderId = o.id
+            join Trip trip on trip.tripId = o.tripId
+                and trip.tenantId = :tenantId
+                and coalesce(lower(trip.status), '') <> 'deleted'
             join VendorDelivery vendorDelivery on vendorDelivery.id = relation.partyId
             left join DeliveryPartyRelation deliveryRelation on deliveryRelation.partyId = vendorDelivery.id
                 and deliveryRelation.partyType = 'VENDOR_DELIVERY'
@@ -167,6 +174,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
                 and deliveryRelation.isDeleted = false
             join Delivery delivery on (delivery.id = deliveryRelation.deliveryId
                 or delivery.vendorDelieveryId = vendorDelivery.id)
+                and delivery.tripId = o.tripId
                 and delivery.tenantId = :tenantId
                 and delivery.isActive = true
                 and delivery.isDeleted = false
