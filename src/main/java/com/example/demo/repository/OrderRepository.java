@@ -135,6 +135,10 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
                 and delivery.tenantId = :tenantId
                 and delivery.isActive = true
                 and delivery.isDeleted = false
+            join Trip trip on trip.tripId = delivery.tripId
+                and trip.tenantId = :tenantId
+                and trip.status is not null
+                and lower(trim(trip.status)) not in ('completed', 'deleted')
             where o.tenantId = :tenantId
               and o.isActive = true
               and o.isDeleted = false
@@ -170,6 +174,10 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
                 and delivery.tenantId = :tenantId
                 and delivery.isActive = true
                 and delivery.isDeleted = false
+            join Trip trip on trip.tripId = delivery.tripId
+                and trip.tenantId = :tenantId
+                and trip.status is not null
+                and lower(trim(trip.status)) not in ('completed', 'deleted')
             where o.tenantId = :tenantId
               and o.isActive = true
               and o.isDeleted = false
