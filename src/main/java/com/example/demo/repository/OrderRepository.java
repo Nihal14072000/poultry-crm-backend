@@ -131,7 +131,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             from Order o
             join PartyOrderRelation relation on relation.orderId = o.id
             join SupplierPickup pickup on pickup.id = relation.partyId
-            left join Delivery delivery on delivery.supplierPickupId = pickup.id
+            join Delivery delivery on delivery.supplierPickupId = pickup.id
                 and delivery.tenantId = :tenantId
                 and delivery.isActive = true
                 and delivery.isDeleted = false
@@ -165,7 +165,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
                 and deliveryRelation.tenantId = :tenantId
                 and deliveryRelation.isActive = true
                 and deliveryRelation.isDeleted = false
-            left join Delivery delivery on (delivery.id = deliveryRelation.deliveryId
+            join Delivery delivery on (delivery.id = deliveryRelation.deliveryId
                 or delivery.vendorDelieveryId = vendorDelivery.id)
                 and delivery.tenantId = :tenantId
                 and delivery.isActive = true
