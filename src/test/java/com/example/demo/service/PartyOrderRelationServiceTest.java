@@ -61,6 +61,36 @@ class PartyOrderRelationServiceTest {
     }
 
     @Test
+    void replacingActualOrdersSetsTripIdAndDeactivatesLegacyRelations() {
+        var repository = mock(PartyOrderRelationRepository.class);
+        var orderService = mock(OrderService.class);
+        var legacyRelation = new PartyOrderRelation();
+        legacyRelation.setIsActive(true);
+        legacyRelation.setIsDeleted(false);
+        var actualOrder = new Order();
+
+        when(repository.findByPartyIdAndPartyType(
+                25, PartyOrderRelationService.SUPPLIER_PICKUP_PARTY_TYPE))
+                .thenReturn(List.of(legacyRelation));
+        when(orderService.create(actualOrder)).thenReturn(actualOrder);
+
+        var service = new PartyOrderRelationService(repository, orderService);
+        service.replaceOrders(
+                25, List.of(actualOrder),
+                PartyOrderRelationService.SUPPLIER_PICKUP_PARTY_TYPE, 7);
+
+        assertEquals(7, actualOrder.getTripId());
+        assertEquals(false, legacyRelation.getIsActive());
+        assertEquals(true, legacyRelation.getIsDeleted());
+        verify(repository).findByPartyIdAndPartyType(
+                25, PartyOrderRelationService.SUPPLIER_PICKUP_PARTY_TYPE);
+        verify(repository, never()).findByPartyIdAndPartyTypeAndTripId(
+                25, PartyOrderRelationService.SUPPLIER_PICKUP_PARTY_TYPE, 7);
+        verify(orderService).create(actualOrder);
+        verify(repository).saveAll(anyList());
+    }
+
+    @Test
     void replacingSupplierPickupOrdersDeactivatesOnlyThatPickupRelations() {
         assertActualOrderRelationsAreScopedToRecord(
                 25, PartyOrderRelationService.SUPPLIER_PICKUP_PARTY_TYPE);
