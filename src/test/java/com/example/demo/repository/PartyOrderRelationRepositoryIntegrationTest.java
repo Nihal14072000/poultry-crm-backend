@@ -1,6 +1,7 @@
 package com.example.demo.repository;
 
 import com.example.demo.entity.Order;
+import com.example.demo.entity.Trip;
 import com.example.demo.entity.SupplierPickup;
 import com.example.demo.entity.VendorDelivery;
 import com.example.demo.entity.Delivery;
@@ -116,14 +117,15 @@ class PartyOrderRelationRepositoryIntegrationTest {
         pickup.setIsDeleted(false);
         entityManager.persist(pickup);
 
+        Trip activeTrip = persistTrip("In transit");
         Delivery tripDelivery = new Delivery();
-        tripDelivery.setTripId(71);
+        tripDelivery.setTripId(activeTrip.getTripId());
         tripDelivery.setSupplierPickupId(pickup.getId());
         tripDelivery.setIsActive(true);
         tripDelivery.setIsDeleted(false);
         entityManager.persist(tripDelivery);
 
-        Order actual = persistOrder(null);
+        Order actual = persistOrder(activeTrip.getTripId());
         actual.setOrderTypeId(1);
         actual.setQty(8);
         actual.setWeight(new BigDecimal("20.50"));
@@ -154,8 +156,9 @@ class PartyOrderRelationRepositoryIntegrationTest {
         vendorDelivery.setIsDeleted(false);
         entityManager.persist(vendorDelivery);
 
+        Trip activeTrip = persistTrip("Completed");
         Delivery tripDelivery = new Delivery();
-        tripDelivery.setTripId(72);
+        tripDelivery.setTripId(activeTrip.getTripId());
         tripDelivery.setVendorDelieveryId(vendorDelivery.getId());
         tripDelivery.setIsActive(true);
         tripDelivery.setIsDeleted(false);
@@ -170,7 +173,7 @@ class PartyOrderRelationRepositoryIntegrationTest {
         deliveryRelation.setIsDeleted(false);
         entityManager.persist(deliveryRelation);
 
-        Order actual = persistOrder(null);
+        Order actual = persistOrder(activeTrip.getTripId());
         actual.setOrderTypeId(1);
         actual.setQty(12);
         actual.setWeight(new BigDecimal("30.00"));
@@ -208,15 +211,23 @@ class PartyOrderRelationRepositoryIntegrationTest {
         pickupWithInactiveTrip.setIsDeleted(false);
         entityManager.persist(pickupWithInactiveTrip);
 
+        Delivery missingPickupTrip = new Delivery();
+        missingPickupTrip.setTripId(99991);
+        missingPickupTrip.setSupplierPickupId(pickupWithoutTrip.getId());
+        missingPickupTrip.setIsActive(true);
+        missingPickupTrip.setIsDeleted(false);
+        entityManager.persist(missingPickupTrip);
+
+        Trip deletedPickupTrip = persistTrip("Deleted");
         Delivery inactivePickupTrip = new Delivery();
-        inactivePickupTrip.setTripId(73);
+        inactivePickupTrip.setTripId(deletedPickupTrip.getTripId());
         inactivePickupTrip.setSupplierPickupId(pickupWithInactiveTrip.getId());
-        inactivePickupTrip.setIsActive(false);
+        inactivePickupTrip.setIsActive(true);
         inactivePickupTrip.setIsDeleted(false);
         entityManager.persist(inactivePickupTrip);
 
-        Order pickupWithoutTripOrder = persistOrder(null);
-        Order pickupInactiveTripOrder = persistOrder(null);
+        Order pickupWithoutTripOrder = persistOrder(99991);
+        Order pickupInactiveTripOrder = persistOrder(deletedPickupTrip.getTripId());
         persistRelation(pickupWithoutTrip.getId(), "SUPPLIER_PICKUP", pickupWithoutTripOrder.getId());
         persistRelation(pickupWithInactiveTrip.getId(), "SUPPLIER_PICKUP", pickupInactiveTripOrder.getId());
 
@@ -234,15 +245,23 @@ class PartyOrderRelationRepositoryIntegrationTest {
         vendorWithInactiveTrip.setIsDeleted(false);
         entityManager.persist(vendorWithInactiveTrip);
 
+        Delivery missingVendorTrip = new Delivery();
+        missingVendorTrip.setTripId(99992);
+        missingVendorTrip.setVendorDelieveryId(vendorWithoutTrip.getId());
+        missingVendorTrip.setIsActive(true);
+        missingVendorTrip.setIsDeleted(false);
+        entityManager.persist(missingVendorTrip);
+
+        Trip deletedVendorTrip = persistTrip("Deleted");
         Delivery inactiveVendorTrip = new Delivery();
-        inactiveVendorTrip.setTripId(74);
+        inactiveVendorTrip.setTripId(deletedVendorTrip.getTripId());
         inactiveVendorTrip.setVendorDelieveryId(vendorWithInactiveTrip.getId());
-        inactiveVendorTrip.setIsActive(false);
+        inactiveVendorTrip.setIsActive(true);
         inactiveVendorTrip.setIsDeleted(false);
         entityManager.persist(inactiveVendorTrip);
 
-        Order vendorWithoutTripOrder = persistOrder(null);
-        Order vendorInactiveTripOrder = persistOrder(null);
+        Order vendorWithoutTripOrder = persistOrder(99992);
+        Order vendorInactiveTripOrder = persistOrder(deletedVendorTrip.getTripId());
         persistRelation(vendorWithoutTrip.getId(), "VENDOR_DELIVERY", vendorWithoutTripOrder.getId());
         persistRelation(vendorWithInactiveTrip.getId(), "VENDOR_DELIVERY", vendorInactiveTripOrder.getId());
 
@@ -251,6 +270,14 @@ class PartyOrderRelationRepositoryIntegrationTest {
 
         assertThat(orderRepository.findActualSupplierPickupOrders(1L, 25)).isEmpty();
         assertThat(orderRepository.findActualVendorDeliveryOrders(1L, 35)).isEmpty();
+    }
+
+    private Trip persistTrip(String status) {
+        Trip trip = new Trip();
+        trip.setStatus(status);
+        entityManager.persist(trip);
+        entityManager.flush();
+        return trip;
     }
 
     private Order persistOrder(Integer tripId) {
