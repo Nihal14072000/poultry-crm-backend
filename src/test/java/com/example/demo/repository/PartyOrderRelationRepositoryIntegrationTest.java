@@ -152,9 +152,9 @@ class PartyOrderRelationRepositoryIntegrationTest {
         var result = orderRepository.findActiveByPartyIdAndPartyType(1L, 25, "B");
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).id()).isEqualTo(actual.getId());
-        assertThat(result.get(0).tripId()).isEqualTo(71);
-        assertThat(result.get(0).weight()).isEqualByComparingTo("20.50");
+        assertThat(result.get(0).getId()).isEqualTo(actual.getId());
+        assertThat(result.get(0).getTripId()).isEqualTo(71);
+        assertThat(result.get(0).getWeight()).isEqualByComparingTo("20.50");
     }
 
     @Test
@@ -198,9 +198,9 @@ class PartyOrderRelationRepositoryIntegrationTest {
         var result = orderRepository.findActiveByPartyIdAndPartyType(1L, 35, "S");
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).id()).isEqualTo(actual.getId());
-        assertThat(result.get(0).tripId()).isEqualTo(72);
-        assertThat(result.get(0).weight()).isEqualByComparingTo("30.00");
+        assertThat(result.get(0).getId()).isEqualTo(actual.getId());
+        assertThat(result.get(0).getTripId()).isEqualTo(72);
+        assertThat(result.get(0).getWeight()).isEqualByComparingTo("30.00");
     }
 
     private Order persistOrder(Integer tripId) {
