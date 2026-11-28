@@ -35,6 +35,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             where o.tenantId = :tenantId
               and o.isActive = true
               and o.isDeleted = false
+              and o.tripId is not null
               and exists (
                   select relation.relationId
                   from PartyOrderRelation relation
@@ -78,6 +79,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             where o.tenantId = :tenantId
               and o.isActive = true
               and o.isDeleted = false
+              and o.tripId is not null
               and exists (
                   select relation.relationId
                   from PartyOrderRelation relation
@@ -119,6 +121,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             where o.tenantId = :tenantId
               and o.isActive = true
               and o.isDeleted = false
+              and o.tripId is not null
               and (:startDate is null or o.createDate >= :startDate)
               and (:endDateExclusive is null or o.createDate < :endDateExclusive)
               and exists (
