@@ -192,6 +192,67 @@ class PartyOrderRelationRepositoryIntegrationTest {
         assertThat(result.get(0).createDate()).isEqualTo(LocalDateTime.parse("2026-11-21T11:00:00"));
     }
 
+    @Test
+    void actualPartyOrdersExcludeMissingAndInactiveTrips() {
+        SupplierPickup pickupWithoutTrip = new SupplierPickup();
+        pickupWithoutTrip.setBuyingPartyId(25);
+        pickupWithoutTrip.setCreatedDate(LocalDateTime.parse("2026-11-22T10:00:00"));
+        pickupWithoutTrip.setIsActive(true);
+        pickupWithoutTrip.setIsDeleted(false);
+        entityManager.persist(pickupWithoutTrip);
+
+        SupplierPickup pickupWithInactiveTrip = new SupplierPickup();
+        pickupWithInactiveTrip.setBuyingPartyId(25);
+        pickupWithInactiveTrip.setCreatedDate(LocalDateTime.parse("2026-11-22T11:00:00"));
+        pickupWithInactiveTrip.setIsActive(true);
+        pickupWithInactiveTrip.setIsDeleted(false);
+        entityManager.persist(pickupWithInactiveTrip);
+
+        Delivery inactivePickupTrip = new Delivery();
+        inactivePickupTrip.setTripId(73);
+        inactivePickupTrip.setSupplierPickupId(pickupWithInactiveTrip.getId());
+        inactivePickupTrip.setIsActive(false);
+        inactivePickupTrip.setIsDeleted(false);
+        entityManager.persist(inactivePickupTrip);
+
+        Order pickupWithoutTripOrder = persistOrder(null);
+        Order pickupInactiveTripOrder = persistOrder(null);
+        persistRelation(pickupWithoutTrip.getId(), "SUPPLIER_PICKUP", pickupWithoutTripOrder.getId());
+        persistRelation(pickupWithInactiveTrip.getId(), "SUPPLIER_PICKUP", pickupInactiveTripOrder.getId());
+
+        VendorDelivery vendorWithoutTrip = new VendorDelivery();
+        vendorWithoutTrip.setSellingPartyId(35);
+        vendorWithoutTrip.setCreateDate(LocalDateTime.parse("2026-11-22T12:00:00"));
+        vendorWithoutTrip.setIsActive(true);
+        vendorWithoutTrip.setIsDeleted(false);
+        entityManager.persist(vendorWithoutTrip);
+
+        VendorDelivery vendorWithInactiveTrip = new VendorDelivery();
+        vendorWithInactiveTrip.setSellingPartyId(35);
+        vendorWithInactiveTrip.setCreateDate(LocalDateTime.parse("2026-11-22T13:00:00"));
+        vendorWithInactiveTrip.setIsActive(true);
+        vendorWithInactiveTrip.setIsDeleted(false);
+        entityManager.persist(vendorWithInactiveTrip);
+
+        Delivery inactiveVendorTrip = new Delivery();
+        inactiveVendorTrip.setTripId(74);
+        inactiveVendorTrip.setVendorDelieveryId(vendorWithInactiveTrip.getId());
+        inactiveVendorTrip.setIsActive(false);
+        inactiveVendorTrip.setIsDeleted(false);
+        entityManager.persist(inactiveVendorTrip);
+
+        Order vendorWithoutTripOrder = persistOrder(null);
+        Order vendorInactiveTripOrder = persistOrder(null);
+        persistRelation(vendorWithoutTrip.getId(), "VENDOR_DELIVERY", vendorWithoutTripOrder.getId());
+        persistRelation(vendorWithInactiveTrip.getId(), "VENDOR_DELIVERY", vendorInactiveTripOrder.getId());
+
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(orderRepository.findActualSupplierPickupOrders(1L, 25)).isEmpty();
+        assertThat(orderRepository.findActualVendorDeliveryOrders(1L, 35)).isEmpty();
+    }
+
     private Order persistOrder(Integer tripId) {
         Order order = new Order();
         order.setTripId(tripId);
