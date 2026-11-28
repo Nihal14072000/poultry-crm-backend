@@ -93,16 +93,29 @@ class PartyOrderRelationRepositoryIntegrationTest {
         otherPartyOrder.setRate(new BigDecimal("10.00"));
         entityManager.merge(otherPartyOrder);
 
-        persistRelation(25, "SUPPLIER_PICKUP", matchingOrder.getId());
-        persistRelation(26, "SUPPLIER_PICKUP", otherPartyOrder.getId());
+        SupplierPickup matchingPickup = new SupplierPickup();
+        matchingPickup.setBuyingPartyId(25);
+        matchingPickup.setIsActive(true);
+        matchingPickup.setIsDeleted(false);
+        entityManager.persist(matchingPickup);
+
+        SupplierPickup otherPickup = new SupplierPickup();
+        otherPickup.setBuyingPartyId(26);
+        otherPickup.setIsActive(true);
+        otherPickup.setIsDeleted(false);
+        entityManager.persist(otherPickup);
+        entityManager.flush();
+
+        persistRelation(matchingPickup.getId(), "SUPPLIER_PICKUP", matchingOrder.getId());
+        persistRelation(otherPickup.getId(), "SUPPLIER_PICKUP", otherPartyOrder.getId());
         entityManager.flush();
         entityManager.clear();
 
         assertThat(orderRepository.sumActiveOrderWeightTimesRateByPartyIdAndPartyType(
-                1L, 25, "SUPPLIER_PICKUP"
+                1L, 25, "B"
         )).isEqualByComparingTo("50.00");
         assertThat(orderRepository.sumActiveOrderWeightTimesRateByPartyIdAndPartyType(
-                1L, 99, "SUPPLIER_PICKUP"
+                1L, 99, "B"
         )).isEqualByComparingTo("0");
     }
 
@@ -136,13 +149,12 @@ class PartyOrderRelationRepositoryIntegrationTest {
         entityManager.flush();
         entityManager.clear();
 
-        var result = orderRepository.findActualSupplierPickupOrders(1L, 25);
+        var result = orderRepository.findActiveByPartyIdAndPartyType(1L, 25, "B");
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).id()).isEqualTo(actual.getId());
         assertThat(result.get(0).tripId()).isEqualTo(71);
         assertThat(result.get(0).weight()).isEqualByComparingTo("20.50");
-        assertThat(result.get(0).createDate()).isEqualTo(LocalDateTime.parse("2026-11-20T10:00:00"));
     }
 
     @Test
@@ -183,13 +195,12 @@ class PartyOrderRelationRepositoryIntegrationTest {
         entityManager.flush();
         entityManager.clear();
 
-        var result = orderRepository.findActualVendorDeliveryOrders(1L, 35);
+        var result = orderRepository.findActiveByPartyIdAndPartyType(1L, 35, "S");
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).id()).isEqualTo(actual.getId());
         assertThat(result.get(0).tripId()).isEqualTo(72);
         assertThat(result.get(0).weight()).isEqualByComparingTo("30.00");
-        assertThat(result.get(0).createDate()).isEqualTo(LocalDateTime.parse("2026-11-21T11:00:00"));
     }
 
     private Order persistOrder(Integer tripId) {
