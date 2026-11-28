@@ -1,7 +1,6 @@
 package com.example.demo.service;
 
 import com.example.demo.entity.Order;
-import com.example.demo.dto.PartyActualOrderDto;
 import com.example.demo.repository.OrderRepository;
 import com.example.demo.security.TenantContext;
 import org.springframework.stereotype.Service;
@@ -50,24 +49,6 @@ public class OrderService extends CrudService<Order> {
         return repository.findActiveByPartyIdAndPartyTypeInDateRange(
                 TenantContext.requireTenantId(), partyId, partyType, startOfDay(startDate), startOfNextDay(endDate)
         );
-    }
-
-    public List<PartyActualOrderDto> findActualOrdersByPartyIdAndPartyType(Integer partyId, String partyType) {
-        Long tenantId = TenantContext.requireTenantId();
-        if (PartyOrderRelationService.BUYING_PARTY_TYPE.equals(partyType)) {
-            return repository.findActualSupplierPickupOrders(tenantId, partyId);
-        }
-        if (PartyOrderRelationService.SELLING_PARTY_TYPE.equals(partyType)) {
-            return repository.findActualVendorDeliveryOrders(tenantId, partyId);
-        }
-        throw new IllegalArgumentException("Party type must be B or S.");
-    }
-
-    public BigDecimal sumActualOrderWeightTimesRateByPartyIdAndPartyType(Integer partyId, String partyType) {
-        return findActualOrdersByPartyIdAndPartyType(partyId, partyType).stream()
-                .map(order -> (order.weight() == null ? BigDecimal.ZERO : order.weight())
-                        .multiply(order.rate() == null ? BigDecimal.ZERO : order.rate()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private LocalDateTime startOfDay(LocalDate date) {
