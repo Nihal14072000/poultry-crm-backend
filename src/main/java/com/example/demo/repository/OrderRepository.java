@@ -35,14 +35,35 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             where o.tenantId = :tenantId
               and o.isActive = true
               and o.isDeleted = false
+              and o.tripId is not null
               and exists (
                   select relation.relationId
                   from PartyOrderRelation relation
                   where relation.orderId = o.id
-                    and relation.partyId = :partyId
-                    and relation.partyType = :partyType
+                    and relation.tenantId = :tenantId
                     and relation.isActive = true
                     and relation.isDeleted = false
+                    and (
+                        (:partyType = 'B' and relation.partyType = 'SUPPLIER_PICKUP'
+                            and exists (
+                                select pickup.id from SupplierPickup pickup
+                                where pickup.id = relation.partyId
+                                  and pickup.tenantId = :tenantId
+                                  and pickup.buyingPartyId = :partyId
+                                  and pickup.isActive = true
+                                  and pickup.isDeleted = false
+                            ))
+                        or
+                        (:partyType = 'S' and relation.partyType = 'VENDOR_DELIVERY'
+                            and exists (
+                                select vendorDelivery.id from VendorDelivery vendorDelivery
+                                where vendorDelivery.id = relation.partyId
+                                  and vendorDelivery.tenantId = :tenantId
+                                  and vendorDelivery.sellingPartyId = :partyId
+                                  and vendorDelivery.isActive = true
+                                  and vendorDelivery.isDeleted = false
+                            ))
+                    )
               )
             order by case when o.createDate is null then 1 else 0 end, o.createDate desc
             """)
@@ -58,14 +79,35 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             where o.tenantId = :tenantId
               and o.isActive = true
               and o.isDeleted = false
+              and o.tripId is not null
               and exists (
                   select relation.relationId
                   from PartyOrderRelation relation
                   where relation.orderId = o.id
-                    and relation.partyId = :partyId
-                    and relation.partyType = :partyType
+                    and relation.tenantId = :tenantId
                     and relation.isActive = true
                     and relation.isDeleted = false
+                    and (
+                        (:partyType = 'B' and relation.partyType = 'SUPPLIER_PICKUP'
+                            and exists (
+                                select pickup.id from SupplierPickup pickup
+                                where pickup.id = relation.partyId
+                                  and pickup.tenantId = :tenantId
+                                  and pickup.buyingPartyId = :partyId
+                                  and pickup.isActive = true
+                                  and pickup.isDeleted = false
+                            ))
+                        or
+                        (:partyType = 'S' and relation.partyType = 'VENDOR_DELIVERY'
+                            and exists (
+                                select vendorDelivery.id from VendorDelivery vendorDelivery
+                                where vendorDelivery.id = relation.partyId
+                                  and vendorDelivery.tenantId = :tenantId
+                                  and vendorDelivery.sellingPartyId = :partyId
+                                  and vendorDelivery.isActive = true
+                                  and vendorDelivery.isDeleted = false
+                            ))
+                    )
               )
             """)
     BigDecimal sumActiveOrderWeightTimesRateByPartyIdAndPartyType(
@@ -79,16 +121,37 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             where o.tenantId = :tenantId
               and o.isActive = true
               and o.isDeleted = false
+              and o.tripId is not null
               and (:startDate is null or o.createDate >= :startDate)
               and (:endDateExclusive is null or o.createDate < :endDateExclusive)
               and exists (
                   select relation.relationId
                   from PartyOrderRelation relation
                   where relation.orderId = o.id
-                    and relation.partyId = :partyId
-                    and relation.partyType = :partyType
+                    and relation.tenantId = :tenantId
                     and relation.isActive = true
                     and relation.isDeleted = false
+                    and (
+                        (:partyType = 'B' and relation.partyType = 'SUPPLIER_PICKUP'
+                            and exists (
+                                select pickup.id from SupplierPickup pickup
+                                where pickup.id = relation.partyId
+                                  and pickup.tenantId = :tenantId
+                                  and pickup.buyingPartyId = :partyId
+                                  and pickup.isActive = true
+                                  and pickup.isDeleted = false
+                            ))
+                        or
+                        (:partyType = 'S' and relation.partyType = 'VENDOR_DELIVERY'
+                            and exists (
+                                select vendorDelivery.id from VendorDelivery vendorDelivery
+                                where vendorDelivery.id = relation.partyId
+                                  and vendorDelivery.tenantId = :tenantId
+                                  and vendorDelivery.sellingPartyId = :partyId
+                                  and vendorDelivery.isActive = true
+                                  and vendorDelivery.isDeleted = false
+                            ))
+                    )
               )
             order by case when o.createDate is null then 1 else 0 end, o.createDate desc
             """)
