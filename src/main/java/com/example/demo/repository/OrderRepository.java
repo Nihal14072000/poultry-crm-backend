@@ -123,4 +123,69 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             @Param("partyId") Integer partyId,
             @Param("partyType") String partyType
     );
+
+    @Query("""
+            select new com.example.demo.dto.PartyActualOrderDto(
+                o.id, delivery.tripId, o.orderTypeId, o.qty, o.weight, o.rate, o.total, pickup.createdDate
+            )
+            from Order o
+            join PartyOrderRelation relation on relation.orderId = o.id
+            join SupplierPickup pickup on pickup.id = relation.partyId
+            left join Delivery delivery on delivery.supplierPickupId = pickup.id
+                and delivery.tenantId = :tenantId
+                and delivery.isActive = true
+                and delivery.isDeleted = false
+            where o.tenantId = :tenantId
+              and o.isActive = true
+              and o.isDeleted = false
+              and relation.tenantId = :tenantId
+              and relation.partyType = 'SUPPLIER_PICKUP'
+              and relation.isActive = true
+              and relation.isDeleted = false
+              and pickup.tenantId = :tenantId
+              and pickup.buyingPartyId = :partyId
+              and pickup.isActive = true
+              and pickup.isDeleted = false
+            order by pickup.createdDate desc, o.id desc
+            """)
+    List<com.example.demo.dto.PartyActualOrderDto> findActualSupplierPickupOrders(
+            @Param("tenantId") Long tenantId,
+            @Param("partyId") Integer partyId
+    );
+
+    @Query("""
+            select distinct new com.example.demo.dto.PartyActualOrderDto(
+                o.id, delivery.tripId, o.orderTypeId, o.qty, o.weight, o.rate, o.total, vendorDelivery.createDate
+            )
+            from Order o
+            join PartyOrderRelation relation on relation.orderId = o.id
+            join VendorDelivery vendorDelivery on vendorDelivery.id = relation.partyId
+            left join DeliveryPartyRelation deliveryRelation on deliveryRelation.partyId = vendorDelivery.id
+                and deliveryRelation.partyType = 'VENDOR_DELIVERY'
+                and deliveryRelation.tenantId = :tenantId
+                and deliveryRelation.isActive = true
+                and deliveryRelation.isDeleted = false
+            left join Delivery delivery on (delivery.id = deliveryRelation.deliveryId
+                or delivery.vendorDelieveryId = vendorDelivery.id)
+                and delivery.tenantId = :tenantId
+                and delivery.isActive = true
+                and delivery.isDeleted = false
+            where o.tenantId = :tenantId
+              and o.isActive = true
+              and o.isDeleted = false
+              and relation.tenantId = :tenantId
+              and relation.partyType = 'VENDOR_DELIVERY'
+              and relation.isActive = true
+              and relation.isDeleted = false
+              and vendorDelivery.tenantId = :tenantId
+              and vendorDelivery.sellingPartyId = :partyId
+              and vendorDelivery.isActive = true
+              and vendorDelivery.isDeleted = false
+            order by vendorDelivery.createDate desc, o.id desc
+            """)
+    List<com.example.demo.dto.PartyActualOrderDto> findActualVendorDeliveryOrders(
+            @Param("tenantId") Long tenantId,
+            @Param("partyId") Integer partyId
+    );
+
 }
