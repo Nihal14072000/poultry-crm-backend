@@ -125,7 +125,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     );
 
     @Query("""
-            select new com.example.demo.dto.PartyActualOrderDto(
+            select distinct new com.example.demo.dto.PartyActualOrderDto(
                 o.id, delivery.tripId, o.orderTypeId, o.qty, o.weight, o.rate, o.total, pickup.createdDate
             )
             from Order o
