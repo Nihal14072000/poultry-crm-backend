@@ -5,6 +5,7 @@ import com.example.demo.entity.SupplierPickup;
 import com.example.demo.entity.VendorDelivery;
 import com.example.demo.entity.Delivery;
 import com.example.demo.entity.DeliveryPartyRelation;
+import com.example.demo.entity.Trip;
 import com.example.demo.entity.PartyOrderRelation;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
@@ -116,8 +117,9 @@ class PartyOrderRelationRepositoryIntegrationTest {
         pickup.setIsDeleted(false);
         entityManager.persist(pickup);
 
+        Integer tripId = persistTrip("Assigned");
         Delivery tripDelivery = new Delivery();
-        tripDelivery.setTripId(71);
+        tripDelivery.setTripId(tripId);
         tripDelivery.setSupplierPickupId(pickup.getId());
         tripDelivery.setIsActive(true);
         tripDelivery.setIsDeleted(false);
@@ -131,7 +133,7 @@ class PartyOrderRelationRepositoryIntegrationTest {
         entityManager.merge(actual);
         persistRelation(pickup.getId(), "SUPPLIER_PICKUP", actual.getId());
 
-        Order proposed = persistOrder(71);
+        Order proposed = persistOrder(tripId);
         persistRelation(25, "B", proposed.getId());
         entityManager.flush();
         entityManager.clear();
@@ -140,7 +142,7 @@ class PartyOrderRelationRepositoryIntegrationTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).id()).isEqualTo(actual.getId());
-        assertThat(result.get(0).tripId()).isEqualTo(71);
+        assertThat(result.get(0).tripId()).isEqualTo(tripId);
         assertThat(result.get(0).weight()).isEqualByComparingTo("20.50");
         assertThat(result.get(0).createDate()).isEqualTo(LocalDateTime.parse("2026-11-20T10:00:00"));
     }
@@ -154,8 +156,9 @@ class PartyOrderRelationRepositoryIntegrationTest {
         vendorDelivery.setIsDeleted(false);
         entityManager.persist(vendorDelivery);
 
+        Integer tripId = persistTrip("In transit");
         Delivery tripDelivery = new Delivery();
-        tripDelivery.setTripId(72);
+        tripDelivery.setTripId(tripId);
         tripDelivery.setVendorDelieveryId(vendorDelivery.getId());
         tripDelivery.setIsActive(true);
         tripDelivery.setIsDeleted(false);
@@ -178,7 +181,7 @@ class PartyOrderRelationRepositoryIntegrationTest {
         entityManager.merge(actual);
         persistRelation(vendorDelivery.getId(), "VENDOR_DELIVERY", actual.getId());
 
-        Order proposed = persistOrder(72);
+        Order proposed = persistOrder(tripId);
         persistRelation(35, "S", proposed.getId());
         entityManager.flush();
         entityManager.clear();
@@ -187,7 +190,7 @@ class PartyOrderRelationRepositoryIntegrationTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).id()).isEqualTo(actual.getId());
-        assertThat(result.get(0).tripId()).isEqualTo(72);
+        assertThat(result.get(0).tripId()).isEqualTo(tripId);
         assertThat(result.get(0).weight()).isEqualByComparingTo("30.00");
         assertThat(result.get(0).createDate()).isEqualTo(LocalDateTime.parse("2026-11-21T11:00:00"));
     }
@@ -251,6 +254,75 @@ class PartyOrderRelationRepositoryIntegrationTest {
 
         assertThat(orderRepository.findActualSupplierPickupOrders(1L, 25)).isEmpty();
         assertThat(orderRepository.findActualVendorDeliveryOrders(1L, 35)).isEmpty();
+    }
+
+    @Test
+    void actualPartyOrdersExcludeCompletedAndDeletedTripsButIncludeActiveTripStatuses() {
+        SupplierPickup pickup = new SupplierPickup();
+        pickup.setBuyingPartyId(25);
+        pickup.setCreatedDate(LocalDateTime.parse("2026-11-23T10:00:00"));
+        pickup.setIsActive(true);
+        pickup.setIsDeleted(false);
+        entityManager.persist(pickup);
+
+        Integer assignedTripId = persistTrip("Assigned");
+        Integer completedTripId = persistTrip("Completed");
+        Integer deletedTripId = persistTrip("Deleted");
+
+        Delivery assignedDelivery = new Delivery();
+        assignedDelivery.setTripId(assignedTripId);
+        assignedDelivery.setSupplierPickupId(pickup.getId());
+        assignedDelivery.setIsActive(true);
+        assignedDelivery.setIsDeleted(false);
+        entityManager.persist(assignedDelivery);
+
+        SupplierPickup completedPickup = new SupplierPickup();
+        completedPickup.setBuyingPartyId(25);
+        completedPickup.setCreatedDate(LocalDateTime.parse("2026-11-23T11:00:00"));
+        completedPickup.setIsActive(true);
+        completedPickup.setIsDeleted(false);
+        entityManager.persist(completedPickup);
+        Delivery completedDelivery = new Delivery();
+        completedDelivery.setTripId(completedTripId);
+        completedDelivery.setSupplierPickupId(completedPickup.getId());
+        completedDelivery.setIsActive(true);
+        completedDelivery.setIsDeleted(false);
+        entityManager.persist(completedDelivery);
+
+        SupplierPickup deletedPickup = new SupplierPickup();
+        deletedPickup.setBuyingPartyId(25);
+        deletedPickup.setCreatedDate(LocalDateTime.parse("2026-11-23T12:00:00"));
+        deletedPickup.setIsActive(true);
+        deletedPickup.setIsDeleted(false);
+        entityManager.persist(deletedPickup);
+        Delivery deletedDelivery = new Delivery();
+        deletedDelivery.setTripId(deletedTripId);
+        deletedDelivery.setSupplierPickupId(deletedPickup.getId());
+        deletedDelivery.setIsActive(true);
+        deletedDelivery.setIsDeleted(false);
+        entityManager.persist(deletedDelivery);
+
+        Order activeOrder = persistOrder(null);
+        Order completedOrder = persistOrder(null);
+        Order deletedOrder = persistOrder(null);
+        persistRelation(pickup.getId(), "SUPPLIER_PICKUP", activeOrder.getId());
+        persistRelation(completedPickup.getId(), "SUPPLIER_PICKUP", completedOrder.getId());
+        persistRelation(deletedPickup.getId(), "SUPPLIER_PICKUP", deletedOrder.getId());
+
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(orderRepository.findActualSupplierPickupOrders(1L, 25))
+                .extracting(com.example.demo.dto.PartyActualOrderDto::id)
+                .containsExactly(activeOrder.getId());
+    }
+
+    private Integer persistTrip(String status) {
+        Trip trip = new Trip();
+        trip.setStatus(status);
+        entityManager.persist(trip);
+        entityManager.flush();
+        return trip.getTripId();
     }
 
     private Order persistOrder(Integer tripId) {
