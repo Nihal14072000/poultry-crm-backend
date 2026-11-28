@@ -119,10 +119,14 @@ public class PartyOrderRelationService {
             String partyType,
             Integer tripId
     ) {
-        // Trip orders must be isolated by trip. A null tripId is reserved for
-        // actual pickup/delivery records, whose party IDs are their record IDs.
+        // Actual pickup/delivery records are uniquely identified by partyId.
+        // Load all their relations so legacy orders with a null tripId are also
+        // deactivated when the transaction is replaced. Planned trip orders
+        // remain isolated by tripId.
         long tenantId = TenantContext.requireTenantId();
-        List<PartyOrderRelation> relations = tripId == null
+        boolean actualTransaction = SUPPLIER_PICKUP_PARTY_TYPE.equals(partyType)
+                || VENDOR_DELIVERY_PARTY_TYPE.equals(partyType);
+        List<PartyOrderRelation> relations = tripId == null || actualTransaction
                 ? repository.findByPartyIdAndPartyType(partyId, partyType)
                 : repository.findByPartyIdAndPartyTypeAndTripId(partyId, partyType, tripId);
         return relations.stream()
