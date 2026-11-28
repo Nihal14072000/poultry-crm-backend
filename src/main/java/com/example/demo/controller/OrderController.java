@@ -1,7 +1,6 @@
 package com.example.demo.controller;
 
 import com.example.demo.entity.Order;
-import com.example.demo.dto.PartyActualOrderDto;
 import com.example.demo.service.PartyOrderRelationService;
 import com.example.demo.service.OrderService;
 import org.springframework.http.HttpStatus;
@@ -69,34 +68,6 @@ public class OrderController {
         return ResponseEntity.ok(
                 service.sumActiveOrderWeightTimesRateByPartyIdAndPartyType(partyId, partyType).setScale(0, RoundingMode.HALF_UP)
         );
-    }
-
-
-    @GetMapping("/actual")
-    public ResponseEntity<List<PartyActualOrderDto>> findActualOrders(
-            @RequestParam Integer partyId,
-            @RequestParam String partyType
-    ) {
-        if (partyId == null || partyId <= 0
-                || !(PartyOrderRelationService.BUYING_PARTY_TYPE.equals(partyType)
-                || PartyOrderRelationService.SELLING_PARTY_TYPE.equals(partyType))) {
-            return ResponseEntity.badRequest().build();
-        }
-        return ResponseEntity.ok(service.findActualOrdersByPartyIdAndPartyType(partyId, partyType));
-    }
-
-    @GetMapping("/actual/total")
-    public ResponseEntity<BigDecimal> getActualPartyOrderTotal(
-            @RequestParam Integer partyId,
-            @RequestParam String partyType
-    ) {
-        if (partyId == null || partyId <= 0
-                || !(PartyOrderRelationService.BUYING_PARTY_TYPE.equals(partyType)
-                || PartyOrderRelationService.SELLING_PARTY_TYPE.equals(partyType))) {
-            return ResponseEntity.badRequest().build();
-        }
-        return ResponseEntity.ok(service.sumActualOrderWeightTimesRateByPartyIdAndPartyType(
-                partyId, partyType).setScale(0, RoundingMode.HALF_UP));
     }
 
     @GetMapping("/{id}")
