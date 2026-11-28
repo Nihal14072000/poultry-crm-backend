@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -84,13 +85,14 @@ public class SupplierPickupController {
     @PutMapping("/{id}/orders")
     public ResponseEntity<List<Order>> replaceOrders(
             @PathVariable Integer id,
-            @RequestBody List<Order> orders
+            @RequestBody List<Order> orders,
+            @RequestParam(required = false) Integer tripId
     ) {
         if (service.findById(id).isEmpty()) {
             return ResponseEntity.notFound().build();
         }
         partyOrderRelationService.replaceOrders(
-                id, orders, PartyOrderRelationService.SUPPLIER_PICKUP_PARTY_TYPE);
+                id, orders, PartyOrderRelationService.SUPPLIER_PICKUP_PARTY_TYPE, tripId);
         return ResponseEntity.ok(partyOrderRelationService.findActiveOrders(
                 id, PartyOrderRelationService.SUPPLIER_PICKUP_PARTY_TYPE));
     }
