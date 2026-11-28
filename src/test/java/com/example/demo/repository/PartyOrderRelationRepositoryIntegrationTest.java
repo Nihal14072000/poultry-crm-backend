@@ -1,6 +1,10 @@
 package com.example.demo.repository;
 
 import com.example.demo.entity.Order;
+import com.example.demo.entity.SupplierPickup;
+import com.example.demo.entity.VendorDelivery;
+import com.example.demo.entity.Delivery;
+import com.example.demo.entity.DeliveryPartyRelation;
 import com.example.demo.entity.PartyOrderRelation;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
@@ -9,6 +13,7 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -88,17 +93,114 @@ class PartyOrderRelationRepositoryIntegrationTest {
         otherPartyOrder.setRate(new BigDecimal("10.00"));
         entityManager.merge(otherPartyOrder);
 
-        persistRelation(25, "SUPPLIER_PICKUP", matchingOrder.getId());
-        persistRelation(26, "SUPPLIER_PICKUP", otherPartyOrder.getId());
+        SupplierPickup matchingPickup = new SupplierPickup();
+        matchingPickup.setBuyingPartyId(25);
+        matchingPickup.setIsActive(true);
+        matchingPickup.setIsDeleted(false);
+        entityManager.persist(matchingPickup);
+
+        SupplierPickup otherPickup = new SupplierPickup();
+        otherPickup.setBuyingPartyId(26);
+        otherPickup.setIsActive(true);
+        otherPickup.setIsDeleted(false);
+        entityManager.persist(otherPickup);
+        entityManager.flush();
+
+        persistRelation(matchingPickup.getId(), "SUPPLIER_PICKUP", matchingOrder.getId());
+        persistRelation(otherPickup.getId(), "SUPPLIER_PICKUP", otherPartyOrder.getId());
         entityManager.flush();
         entityManager.clear();
 
         assertThat(orderRepository.sumActiveOrderWeightTimesRateByPartyIdAndPartyType(
-                1L, 25, "SUPPLIER_PICKUP"
+                1L, 25, "B"
         )).isEqualByComparingTo("50.00");
         assertThat(orderRepository.sumActiveOrderWeightTimesRateByPartyIdAndPartyType(
-                1L, 99, "SUPPLIER_PICKUP"
+                1L, 99, "B"
         )).isEqualByComparingTo("0");
+    }
+
+
+    @Test
+    void actualSupplierPickupQueryReturnsActualOrdersAndOrderTripIdButNotProposedOrders() {
+        SupplierPickup pickup = new SupplierPickup();
+        pickup.setBuyingPartyId(25);
+        pickup.setCreatedDate(LocalDateTime.parse("2026-11-20T10:00:00"));
+        pickup.setIsActive(true);
+        pickup.setIsDeleted(false);
+        entityManager.persist(pickup);
+
+        Delivery tripDelivery = new Delivery();
+        tripDelivery.setTripId(71);
+        tripDelivery.setSupplierPickupId(pickup.getId());
+        tripDelivery.setIsActive(true);
+        tripDelivery.setIsDeleted(false);
+        entityManager.persist(tripDelivery);
+
+        Order actual = persistOrder(71);
+        actual.setOrderTypeId(1);
+        actual.setQty(8);
+        actual.setWeight(new BigDecimal("20.50"));
+        actual.setRate(new BigDecimal("100.00"));
+        entityManager.merge(actual);
+        persistRelation(pickup.getId(), "SUPPLIER_PICKUP", actual.getId());
+
+        Order proposed = persistOrder(71);
+        persistRelation(25, "B", proposed.getId());
+        entityManager.flush();
+        entityManager.clear();
+
+        var result = orderRepository.findActiveByPartyIdAndPartyType(1L, 25, "B");
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).id()).isEqualTo(actual.getId());
+        assertThat(result.get(0).tripId()).isEqualTo(71);
+        assertThat(result.get(0).weight()).isEqualByComparingTo("20.50");
+    }
+
+    @Test
+    void actualVendorDeliveryQueryReturnsActualOrdersAndOrderTripIdButNotProposedOrders() {
+        VendorDelivery vendorDelivery = new VendorDelivery();
+        vendorDelivery.setSellingPartyId(35);
+        vendorDelivery.setCreateDate(LocalDateTime.parse("2026-11-21T11:00:00"));
+        vendorDelivery.setIsActive(true);
+        vendorDelivery.setIsDeleted(false);
+        entityManager.persist(vendorDelivery);
+
+        Delivery tripDelivery = new Delivery();
+        tripDelivery.setTripId(72);
+        tripDelivery.setVendorDelieveryId(vendorDelivery.getId());
+        tripDelivery.setIsActive(true);
+        tripDelivery.setIsDeleted(false);
+        entityManager.persist(tripDelivery);
+
+        DeliveryPartyRelation deliveryRelation = new DeliveryPartyRelation();
+        deliveryRelation.setId(900);
+        deliveryRelation.setDeliveryId(tripDelivery.getId());
+        deliveryRelation.setPartyId(vendorDelivery.getId());
+        deliveryRelation.setPartyType("VENDOR_DELIVERY");
+        deliveryRelation.setIsActive(true);
+        deliveryRelation.setIsDeleted(false);
+        entityManager.persist(deliveryRelation);
+
+        Order actual = persistOrder(72);
+        actual.setOrderTypeId(1);
+        actual.setQty(12);
+        actual.setWeight(new BigDecimal("30.00"));
+        actual.setRate(new BigDecimal("110.00"));
+        entityManager.merge(actual);
+        persistRelation(vendorDelivery.getId(), "VENDOR_DELIVERY", actual.getId());
+
+        Order proposed = persistOrder(72);
+        persistRelation(35, "S", proposed.getId());
+        entityManager.flush();
+        entityManager.clear();
+
+        var result = orderRepository.findActiveByPartyIdAndPartyType(1L, 35, "S");
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).id()).isEqualTo(actual.getId());
+        assertThat(result.get(0).tripId()).isEqualTo(72);
+        assertThat(result.get(0).weight()).isEqualByComparingTo("30.00");
     }
 
     private Order persistOrder(Integer tripId) {
